@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="60mm" viewBox="0 0 240 240">
+  <!-- Plain vent slots for ESP-Enclosure: 5 bars evenly spaced.
+       Drawn horizontal because the model turns artwork a quarter turn
+       clockwise when it lays it on the lid. Fills, not strokes.
+       Canvas matches the other shipped artwork so they look the same size
+       side by side in an editor; the model rescales to the vent patch, so
+       the canvas size has no effect on the print. -->
+  <g fill="#000000">
+    <rect x="0" y="0" width="240" height="30"/>
+    <rect x="0" y="52.5" width="240" height="30"/>
+    <rect x="0" y="105" width="240" height="30"/>
+    <rect x="0" y="157.5" width="240" height="30"/>
+    <rect x="0" y="210" width="240" height="30"/>
+  </g>
+</svg>

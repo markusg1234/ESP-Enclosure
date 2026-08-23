@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="60mm" viewBox="0 0 240 240">
+  <!-- Wifi symbol for ESP-Enclosure.
+       Filled outlines only, no strokes: OpenSCAD imports fill areas and
+       ignores stroke, so a stroked path would come in empty.
+       Arcs span 90 degrees; each is a closed annular sector.
+       Canvas matches the other shipped artwork so they look the same size
+       side by side in an editor; the model rescales to the vent patch, so
+       the canvas size has no effect on the print. -->
+  <g fill="#000000">
+    <path d="M 71.1111 146.5358 A 69.1393 69.1393 0 0 1 168.8889 146.5358 L 151.1111 164.3136 A 43.9978 43.9978 0 0 0 88.8889 164.3136 Z"/><path d="M 35.5556 110.9803 A 119.4225 119.4225 0 0 1 204.4444 110.9803 L 186.6667 128.7581 A 94.2809 94.2809 0 0 0 53.3333 128.7581 Z"/><path d="M 0.0000 75.4247 A 169.7056 169.7056 0 0 1 240.0000 75.4247 L 222.2222 93.2025 A 144.5641 144.5641 0 0 0 17.7778 93.2025 Z"/><circle cx="120.0000" cy="195.4247" r="18.8562"/>
+  </g>
+</svg>
