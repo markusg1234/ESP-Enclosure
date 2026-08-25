@@ -35,10 +35,13 @@
    EVERY DIMENSION IS IN MILLIMETRES. The only settings that are not are the
    handful marked (in degrees), the plain counts, and the on/off switches.
 
-   >> PRINT THE FIT COUPON FIRST. Set part = "coupon". It is a 2-minute print
-   >> that tells you which hole clearance actually grips your pins, before you
-   >> commit to a whole case. The Dupont and board defaults below are sensible
-   >> starting points, not verified specifications for your hardware.
+   >> PRINT THE FIT COUPON FIRST. Set part = "coupon". A few minutes and five
+   >> layers, and you push a REAL LENGTH OF HEADER into it — five holes on the
+   >> pitch per clearance step — to find which one actually grips your pins
+   >> before you commit to a whole case. With dupont_housing on it carries a
+   >> second row for the plastic surround as well. The Dupont and board defaults
+   >> below are sensible starting points, not verified specifications for your
+   >> hardware.
    =========================================================================== */
 
 
@@ -47,7 +50,7 @@
 // Which part to render
 part = "tray";          // [tray:Tray (bottom), lid:Lid (top), template:Fit template - check your board fits, coupon:Fit test coupon - check the hole size, all:Print layout, assembled:Assembly preview]
 
-// Gap between parts in the print layout
+// Gap between parts in the print layout (mm)
 layout_gap = 5;         // [0:0.5:40]
 
 
@@ -56,68 +59,187 @@ layout_gap = 5;         // [0:0.5:40]
 // Pins per row. Two rows, one down each long side.
 pin_count = 19;         // [1:60]
 
-// Centre-to-centre along the length. Ignored unless Dupont size = Custom. (mm)
-pin_pitch = 2.54;       // [0.5:0.01:5]
 
-// Centre-to-centre between the two rows, across the width (mm). 22.86 is 0.9
-// inch, which is what most ESP devkits use; 25.4 is a full inch.
+// Centre-to-centre between the two rows, across the width. 22.86 is what most
+// ESP devkits use; 25.4 is the other common one. (mm)
 row_spacing = 22.86;    // [5:0.01:60]
 
 // Shift the whole header along the length. (mm)
 pin_x_offset = 0;       // [-20:0.01:20]
 
 
-/* [Dupont size] */
+/* [Dupont preset / pin pitch] */
 
-// Standard Dupont families. Sets the post size, hole clearance and pitch.
-dupont_preset = 254;    // [254:2.54mm standard, 200:2.00mm compact, 127:1.27mm micro, 0:Custom]
+// THIS IS THE PIN PITCH. There is no separate pin_pitch setting any more — the
+// three Dupont families each come with their own pitch, and picking the family
+// is picking it: 2.54, 2.00 or 1.27. It sets the post size with it.
+dupont_preset = 254;    // [254:2.54mm pitch - standard, 200:2.00mm pitch - compact, 127:1.27mm pitch - micro]
 
-// Square pin post across the flats. Used only when preset = Custom. (mm)
-custom_post = 0.64;     // [0.2:0.01:2]
+// Size the openings for the connector's PLASTIC SQUARE SURROUND instead of for
+// the bare metal post, so a housed Dupont pushes up into the trough rather than
+// only a naked crimp terminal. Off, everything is sized to the post, which is
+// what it has always been.
+//
+// The surround is not a second measurement to take. Housings are moulded to
+// TILE THE PITCH — that is exactly what lets a row of them sit shoulder to
+// shoulder on a header — so their size IS the pitch, less the moulding gap that
+// keeps two of them from jamming. 2.50 at the 2.54 preset, 1.96 at 2.00, 1.23
+// at 1.27.
+//
+// That tiling is also why this tick MERGES THE ROW, and it is not a choice: at
+// the 2.54 preset the opening becomes 2.86 against a 2.54 pitch, so the plate
+// between one hole and the next is 0.32 mm of NEGATIVE material. There is no
+// setting at which separate holes survive a surround. So while it is on:
+//
+//   pin_slot      is on whatever it says — one continuous channel down the row
+//   pin_slot_w    is held at the opening's width if it is set below it
+//   pocket_wall   is 0 — the troughs merge into one slot down each row
+//
+// wire_channels is NOT one of them and keeps working normally. A wire channel
+// is sized to the PIN, never to the surround: what goes along it is a wire off
+// a pin, while the connector arrives from below and goes up through the plate.
+// So it stays 1.00mm at the 2.54 preset with 1.54mm of rib between channels,
+// exactly as with the tick off.
+//
+// The console says all of that when you tick it, so nothing goes quiet.
+//
+// terminal_len is worth a look alongside this, but there is no right answer to
+// it and nothing warns: it is the trough's DEPTH, so it sets how much of the
+// housing is buried and how much shows below the case. A housed Dupont is about
+// 15 mm, so at the default 6 roughly 9 mm of it is on display — which is a
+// shorter case and an easier connector to unplug, if that is what you want.
+dupont_housing = true;
 
-// Added to the post size to get the hole (mm). Raise if pins bind, lower if
-// loose.
+
+// Added to the post size to get the hole — or to the plastic surround, with
+// dupont_housing ticked (mm). Raise if pins bind, lower if loose.
 hole_clearance = 0.36;  // [0:0.01:1.5]
 
-// Funnel on the upper side of each hole, to guide a descending pin in. A plain
-// 45-degree chamfer, so this is both how far it opens out and how deep it cuts.
-// It is capped at half the plate so it can never reach the underside — see
-// lead_d below for why that matters. (mm)
-lead_in = 0.5;          // [0:0.05:2]
+// There is no lead-in chamfer on the holes, and no lead_in to set. The holes
+// are plain square bores, top to bottom, at exactly `hole` across their whole
+// depth.
+//
+// Losing the funnel costs less than it sounds like, because the hole is a
+// CLEARANCE hole by construction: it is whatever has to pass through it plus
+// hole_clearance, so it is already wider than that thing before anything is
+// chamfered — 0.18mm per side at every preset. Against the bare post that is a
+// hole 56% wider than the pin at 2.54 and 90% wider at 1.27; against a plastic
+// surround the same 0.18mm is proportionally far less, because the surround is
+// most of the pitch to begin with. Either way a pin was never being pressed
+// into an interference fit that a funnel had to open up. The funnel only helped
+// a pin FIND a hole it already fitted, and what does the finding is the pitch,
+// which the header and the plate share.
+//
+// The exception is hole_clearance = 0, which the slider allows: that makes the
+// hole exactly the post and there is no clearance left to speak of. Warned
+// about below, since the funnel is no longer there to disguise it.
+
+// Replace the row of square clearance holes with ONE continuous channel running
+// the length of the header. The pins still drop through it into the trough
+// below and the terminals still push up from underneath — what goes away is the
+// rib BETWEEN one hole and the next, which is what fails at a fine pitch: the
+// 1.27mm micro preset leaves pitch minus hole = 0.51mm of plate between holes,
+// thinner than a single 0.4mm extrusion, so it prints as a smear rather than a
+// wall.
+//
+// The price is location ALONG the row: nothing stops the header sliding
+// lengthwise any more. The PCB rests and the board's own fit against the USB
+// wall already do that.
+//
+// Forced on by dupont_housing, for the same reason at a coarser pitch: a
+// surround leaves no rib between one hole and the next either.
+pin_slot = true;
+
+// Channel width, and 0 is the default: as wide as a hole, which keeps the pins
+// gripped across the row exactly as separate holes did and leaves the coupon's
+// reading meaningful. It is also the width that keeps the board where it is —
+// see pin_slot, which only drops the board when the channel is wider than the
+// header's strip.
+//
+// ANY OTHER VALUE GIVES THAT UP. At 4mm a 0.64mm pin has three millimetres of
+// air around it: the channel is then clearance, not a fit, the pins are located
+// in neither direction, and the board is held by its rests and the walls alone.
+// That is a legitimate thing to want — it makes the pins trivial to drop in and
+// leaves room to bring wires up beside them — but it is a different part, and
+// the coupon no longer tells you anything about it.
+//
+// Keep it inside the pocket if you want the whole width to be a way through.
+// Wider, and the channel is a wide pocket over a narrower opening: it still
+// prints, and the pins still pass on the centreline, but only the pocket of it
+// goes anywhere. The console tells you the opening you actually got.
+//
+// With dupont_housing on this is a request rather than the last word: anything
+// below the opening's own width is raised to it, because a channel narrower
+// than the surround is not a channel the surround goes through. Above it, it is
+// yours as usual. (mm)
+pin_slot_w = 3;         // [0:0.1:10]
+
+// How far the channel cuts DOWN from the top face of the floor.
+//
+// There is a floor under this, and asking for less gets you the floor rather
+// than an error: the channel has to get through the hole plate to reach the
+// trough at all, so the minimum is hole_plate_t — 1.0 at the defaults. Below
+// that it stops inside the plate and opens into nothing.
+//
+// Anything past the plate is optional. The trough is square, so the moment the
+// channel breaks through it has the full pocket underneath it, and cutting
+// deeper only removes more of the plinth. It is not the moving target it was
+// when a tapering roof made the minimum depend on the trough and the roof angle.
+//
+// Ignored with the terminal recess off: there is no trough to reach, so the
+// channel is simply cut through the floor the same depth the holes were. (mm)
+pin_slot_depth = 3.0;   // [0.5:0.1:12]
 
 // A channel beside each pin hole, so you can bring a wire off a pin and out
 // into the box instead of taking it down through the underside. It runs from
 // the hole clear through the side of the plinth and opens onto the relieved
-// floor. Off = plain holes, and about 0.5 cm3 less plastic removed.
+// floor. Off = plain holes, and about 0.11 cm3 less plastic removed.
+//
+// Works normally with dupont_housing on, and is unaffected by it — see below.
+//
+// Its width defaults to EXACTLY THE PIN: the post plus hole_clearance, which
+// the Dupont preset already decided. 1.00mm at the 2.54 preset, leaving 1.54mm
+// of rib between one channel and the next. wire_channel_w below overrides that
+// if you want a different number; it is ONE setting, not the four it used to be
+// (slot_w, slot_neck, wire_w, slot_depth) describing a keyhole with a neck, a
+// wider section and its own length, every one of which could be set to
+// something that quietly broke the channel.
+//
+// With dupont_housing OFF that is also the hole's width, so the channel simply
+// continues the hole sideways and the two cannot disagree. With it ON the hole
+// is the surround's — 2.86 — and the channel deliberately does NOT follow: what
+// goes along it is a wire off a pin, while the connector arrives from below and
+// goes up through the plate. A 2.86 channel on a 2.54 pitch would merge every
+// channel into one slot and take the inboard plinth wall with it.
+//
+// The direction and the length are not settings either, because neither has a
+// second sensible value: it always runs toward the middle of the box, and
+// always far enough to break clear through the plinth's side. Outboard is the
+// side wall a couple of millimetres away, with nowhere to put a wire; stopping
+// short of the plinth's face leaves a pocket the wire can never get out of.
 wire_channels = true;
 
-// Width where the channel leaves the hole. 0 = the full width of the hole, so
-// the channel simply opens straight out of it.
+// Wire channel width. 0 = the pin's own hole, which is what it has always been
+// and what keeps the rib between two channels the same as the rib between two
+// pin holes.
 //
-// Set it BELOW the pin post (see the Dupont preset) and it becomes a keyhole
-// instead: the neck traps the pin on all four sides, which braces the pin while
-// you push a terminal onto it from below and keeps the lead-in a complete
-// funnel. It makes no difference to the wire, which enters the channel from the
-// trough underneath and never passes through here. (mm)
-slot_w = 0;             // [0:0.05:2]
-
-// How far the opening runs past the hole's edge, in mm, before it widens to
-// wire_w.
-slot_neck = 0.6;        // [0.2:0.05:3]
-
-// Width of the channel past the neck. Size it for your wire's OUTSIDE
-// diameter, insulation included — 26 AWG hook-up wire is about 1.2mm. (mm)
-wire_w = 1.4;           // [0.4:0.05:4]
-
-// How far the channel runs, measured from the hole's CENTRE. 0 = far enough to
-// break out through the side of the plinth, which is the whole point: a
-// channel that stops inside the plinth is a pocket, not a way out.
+// The useful direction is usually DOWN, not up. The channel carries a wire, and
+// a jumper's insulation is well under a millimetre, so narrowing it buys back
+// rib — which is the whole problem at a fine pitch. At the 1.27 micro preset
+// the derived 0.76 leaves 0.51mm of plate and is rejected; 0.45 leaves 0.82 and
+// works, so this is the setting that makes wire channels possible there at all.
 //
-// The channel always runs toward the middle of the box. Outboard there is only
-// the side wall a couple of millimetres away, so a channel that way has nowhere
-// to put the wire; inboard it opens onto the relieved floor, which is the whole
-// open area under the board. (mm)
-slot_depth = 0;         // [0:0.1:8]
+// Widening trades the other way, and the pitch caps it: two 0.4mm perimeters
+// have to survive between one channel and the next. Ask for more and you get
+// the most the pitch allows rather than an error, and the console says so.
+//
+// Clamped at both ends, so every value on the slider renders:
+//   below 0.4     raised to 0.4  — one extrusion. A narrower slot is not a slot,
+//                                  the slicer simply fills it
+//   above the cap raised down to pitch - 0.8
+//
+// Ignored with wire_channels off. (mm)
+wire_channel_w = 0;     // [0:0.05:3]
 
 
 /* [Terminal recess] */
@@ -139,28 +261,60 @@ seal_bottom = false;
 // into the trough from below. Wires leave straight out of the open underside.
 terminal_recess = true;
 
-// Trough depth — make this at least as long as the part of the connector that
-// would otherwise stick out. About 6mm suits a bare crimp terminal; a full
-// plastic Dupont housing needs more like 15mm and a much thicker floor. (mm)
+// Trough depth, and therefore HOW MUCH OF THE CONNECTOR IS BURIED. Whatever is
+// longer than this shows below the underside of the case.
+//
+// That is a dial, not a target. Bury the lot and the case is flush underneath
+// but tall; leave some proud and the case is shorter and the connector is far
+// easier to grip and unplug. About 6mm swallows a bare crimp terminal whole; a
+// full plastic Dupont housing is nearer 15mm, so at 6 roughly 9mm of it shows.
+// Neither is wrong, and nothing warns about it — set it to whatever leaves the
+// amount of housing you want on display.
+//
+// It costs case height 1:1, because the floor is this plus hole_plate_t. That
+// is the trade: every millimetre you bury is a millimetre of case. (mm)
 terminal_len = 6.0;     // [1:0.1:25]
 
-// Trough width. Wide enough for the connector body plus a little slack. (mm)
-trough_w = 3.0;         // [1:0.1:10]
-
-// Material left above the trough. The pin holes run through this, and it is
-// what the trough has to bridge when printed. Thinner leaves more pin for the
+// Material left above the pocket. The pin holes run through this, and it is
+// what the pocket has to bridge when printed. Thinner leaves more pin for the
 // terminal to grip; too thin and the holes tear out. (mm)
 hole_plate_t = 1.0;     // [0.6:0.1:4]
 
-// How far the trough runs past the end pins, to get a finger in (mm)
-trough_end_margin = 1.0; // [0:0.1:6]
+// Wall left between one pocket and the next. This is the ONLY thing that sizes
+// a pocket, because the pockets are square and sit on the pitch: the pocket is
+// whatever the pitch has left over, pitch - pocket_wall, the same in both
+// directions. 1.74 mm square at the 2.54 preset.
+//
+// Ignored with dupont_housing on, which holds it at 0: a surround fills the
+// pitch, so there is no room for a divider and the troughs have to merge.
+//
+// There is no trough_w any more. It set the pocket across the row while this set
+// it along, which made the pockets rectangles — and it was the wrong shape to
+// offer, because across the row the pocket had no reason to be anything other
+// than what the pitch allows along it. Square, one number decides both.
+//
+// 0.8 is two 0.4mm perimeters, the thinnest divider that prints as a wall
+// rather than a smear. Set it to 0 and the pockets run together into one
+// continuous trough down each row, which is the older behaviour and the only
+// way a full-width crimp terminal fits at 2.54 pitch. (mm)
+pocket_wall = 0.8;      // [0:0.05:3]
 
-// Angle of the ridge that roofs each trough, from horizontal. A flat trough
-// ceiling would be a long unsupported span inside a slot too narrow to ever
-// clean support out of, so the trough is peaked instead. 60 clears any
-// slicer's threshold; lowering it makes the case shorter but riskier.
-// In degrees.
-trough_roof_angle = 65; // [40:1:80]
+// The troughs are square: straight sides from the underside of the case right
+// up to the hole plate, so a connector can rise the whole way. There is no
+// trough_roof_angle any more.
+//
+// They used to be roofed by a ridge, on the reasoning that a flat trough ceiling
+// was an unsupported span inside a slot you could never clean support out of.
+// It is not a span, it is a BRIDGE: a pocket is only `pocket` across and anchored
+// on both its walls, so the slicer bridges the short way. 3mm at a 0.4 nozzle is
+// routine, and support never enters into it.
+//
+// The ridge was costing more than it bought. It tapered the trough to nothing
+// at the plate, so a terminal could only rise until the taper met its own width
+// — about 1mm of grip at the old defaults, against the 3.8mm the console
+// claimed, because that figure counted pin below the plate and ignored the roof
+// in the way. Square troughs made the case 3.2mm shorter, removed 3.2cm3 of
+// plastic, and made the reported grip the grip you actually get.
 
 // Relieve the floor between the two troughs. Only the strips carrying the
 // troughs need the full floor depth; the rest drops to floor_solid, leaving a
@@ -174,30 +328,76 @@ plinth_wall = 1.2;      // [0.4:0.1:5]
 
 /* [Board] */
 
-// PCB length. 0 = derive from the header.
+// PCB length. 0 = derive from the header. (mm)
 board_l = 0;            // [0:0.1:200]
 
-// PCB width. 0 = derive from the header.
+// PCB width. 0 = derive from the header. (mm)
 board_w = 0;            // [0:0.1:200]
 
 // Added each side of the header to get the auto PCB length (mm)
 board_end_margin = 3.0; // [0:0.1:20]
 
-// Added each side of the header to get the auto PCB width (mm)
-board_side_margin = 1.5; // [0:0.1:20]
+// Row centre to the board's long edge. This is what sets the auto PCB width,
+// which is one of the two demands on the case width — see side_margin, which is
+// the other. (mm)
+//
+// There is no board_clearance any more. It measured the board's edge to the
+// interior wall, which is the same span as side_margin minus this minus the
+// wall — three parameters for two distances, and only ever one of them live:
+// below side_margin 4.6 the board chain set the width and side_margin did
+// nothing, above it the reverse. side_margin survived because it is the
+// distance the troughs and pin holes are actually checked against, and because
+// it leaves the default case the size it has always been. The gap the board
+// ends up with is now reported by echo() rather than requested, and warned
+// about if it gets too tight to drop a board into.
+board_side_margin = 3; // [0:0.1:20]
 
-// Gap between the PCB and the interior wall (mm)
-board_clearance = 0.4;  // [0:0.05:3]
-
-// How far the PCB sits above the floor, set by the end ledges. Keep it just
-// big enough to clear the solder joints — every millimetre here is a
-// millimetre of pin that no longer reaches the terminal. (mm)
+// How far the PCB sits above the floor. Keep it just big enough to clear the
+// solder joints — every millimetre here is a millimetre of pin that no longer
+// reaches the terminal.
+//
+// This is the HEADER'S PLASTIC STRIP, and that is why there are no rest pads:
+// the board already sits on the strip the pins are moulded into, and the strip
+// sits on the plinth tops. The case does not set this and does not need to —
+// measure the strip on your own header. A standard 2.54mm one is about 2.5mm.
+//
+// It is not free. Every millimetre here is a millimetre of pin that no longer
+// reaches the terminal, and it comes straight off the grip: pin_length minus
+// this minus hole_plate_t is all a crimp gets. It does NOT change the case
+// height, because the cavity is set by the USB opening clearing the lid's rib
+// long before the board stack matters. (mm)
 pcb_standoff = 1.2;     // [0:0.1:10]
+
+// How WIDE that plastic spacer is, across the row. MEASURE YOURS — about 3mm
+// on the reference board, where the spacers under the module are roughly 3mm
+// square.
+//
+// This is the one thing that decides whether the pin channel drops the board.
+// The spacers are what the board actually rests on, so a channel narrower than
+// one is bridged by it and the board sits where it always did; a channel that
+// wide or wider swallows them and the board goes down with them, taking the
+// flush USB opening and the case height with it.
+//
+// It used to be assumed equal to the pitch, on the reasoning that a header's
+// moulding is one pitch wide. That is true of a continuous moulded strip and
+// NOT true of the discrete spacers on a devkit, which run wider — so the model
+// was testing 2.54 where the real number is 3, and would have missed the drop
+// on exactly the channel width that causes it.
+//
+// There is no strip_l to go with it. The channel is continuous along the row,
+// so how long a spacer is cannot change whether it falls in — only its width
+// across the row can. (mm)
+strip_w = 3.0;          // [0.5:0.1:12]
 
 // How far the header pins stick out below the PCB. MEASURE YOURS. The stock
 // tail on a pre-soldered devkit is only about 3mm, which is not enough to
 // cross the standoff and hole plate AND still grip a terminal — this default
 // assumes long-tail headers. With short pins, set terminal_recess = false.
+//
+// It changes NO geometry, and cannot: the pins are on your header, not on the
+// case. What it does is decide whether the terminal recess can work at all —
+// pin_length minus the standoff minus the plate is what a crimp has to grip,
+// the console prints it, and it is an error if it comes out at or below zero.
 // Millimetres.
 pin_length = 6.0;       // [1:0.1:20]
 
@@ -205,27 +405,34 @@ pin_length = 6.0;       // [1:0.1:20]
 board_t = 1.6;          // [0.4:0.1:5]
 
 // The tallest thing standing on TOP of the board, measured from the board's
-// upper face. The radio module is about 3.1mm; a micro-USB socket is a little
-// less. Raise it if your board has tall electrolytics. Only used to work out
-// the cavity height, and ignored if you set cavity_h yourself. (mm)
-component_h = 4.0;      // [1:0.1:40]
+// upper face. 2.5 is the radio can on the reference board, which sits LEVEL
+// with the top of the USB socket — measure yours. Raise it for tall
+// electrolytics.
+//
+// The socket is allowed for automatically: the cavity takes the larger of this
+// and the shell height usb_type already implies, so a tall connector cannot be
+// forgotten here.
+//
+// It very rarely does anything. The cavity takes the larger of this and what the
+// USB opening needs to clear the lid's rib, and the second beats it until
+// component_h passes usb_oh + rib_h + 0.1. So it is NOT the lever for a shorter
+// case; rib_h is. The console says which of
+// the two is binding and how much dead air the other one is leaving. (mm)
+component_h = 2.5;      // [1:0.1:40]
 
-// Depth of the rests the PCB sits on, measured in from each end wall (mm)
-ledge_d = 3.0;          // [0:0.1:12]
-
-// Width of each rest. There are two at each end, in the corners, rather than
-// one bar across the full width: the header pins already carry and locate the
-// board, so the rests only have to stop it rocking (mm). Set ledge_d = 0 for
-// none.
-ledge_w = 6.0;          // [1:0.1:60]
+// There are no PCB rest pads, and no ledge_d / ledge_w to size them. The four
+// corner blocks that used to stand in the tray are gone: the board already sits
+// on the header's plastic strip, and that strip lands on the plinth tops, so the
+// pads were only ever stopping it rocking. The floor relief no longer has to
+// spare a pillar under each one either.
 
 
 /* [Case size] */
 
-// Outer length. 0 = derive from the header.
+// Outer length. 0 = derive from the header. (mm)
 length_override = 0;    // [0:0.1:250]
 
-// Outer width. 0 = derive from the header.
+// Outer width. 0 = derive from the header. (mm)
 width_override = 0;     // [0:0.1:250]
 
 // Clear air added at the FAR end, past the board, for the module's onboard
@@ -237,13 +444,46 @@ width_override = 0;     // [0:0.1:250]
 // are. MEASURE YOUR OWN BOARD — this default is a starting point. (mm)
 antenna_gap = 6.0;      // [0:0.1:30]
 
-// Row centre to the outer side face. Carries the wall thickness: at 5.8 with a
-// 3.2mm wall the interior is the same 30.8mm it was with a 2.4mm wall. (mm)
+// Row centre to the outer side face — the case's half-width, measured out from
+// a PIN ROW rather than from the board:
+//
+//     width = row_spacing + 2 x side_margin        (22.86 + 11.6 = 34.46)
+//
+// It is measured to the OUTER face, so it carries the wall rather than sitting
+// inside it. Thicken wall and the case does not grow; the interior shrinks. At
+// 5.8 the outside stays 34.46 while the interior goes 31.26 at a 1.6 wall and
+// 29.66 at 2.4.
+//
+// IT IS ONE OF TWO DEMANDS ON THE WIDTH, AND THE SMALLER ONE DOES NOTHING.
+// The board needs pcb_w + 2 x wall, and the width is whichever asks for more.
+// At the defaults they cross at side_margin 4.6: below that the BOARD sets the
+// width and moving this changes nothing whatever — 3.0 and 4.5 both give a
+// 32.06 case — and above it this sets the width 1:1. Raising wall or
+// board_side_margin raises the board's demand and moves that crossover up.
+//
+// So if it looks dead, it is losing the max(), not broken. The console prints
+// the width it settled on and which demand set it.
+//
+// SCREW BOSSES ADD TO THIS INSTEAD OF FITTING INSIDE IT. A corner boss needs
+// room across the width that the header does not, so closure = "screw" puts a
+// full boss_d on EACH side on top of whatever side_margin asked for. The stock
+// closure is "friction", where that does not apply and the row centre sits at
+// side_margin exactly. Switch to screws and the case goes from 34.46 wide to
+// 43.46, and the row centre from 5.8 to side_margin + boss_d = 10.3. Nothing
+// here prevents that — the boss has to go somewhere. (mm)
 side_margin = 5.8;      // [2:0.01:30]
 
-// Wall thickness. 3.2 is two 0.4mm perimeters either side of a 1.2mm lid slot,
-// with enough left under the latch dimples to stay solid. (mm)
-wall = 3.2;             // [1:0.05:6]
+// Wall thickness. 1.6 is four 0.4mm perimeters, solid, and it is the reach a USB
+// plug has to find before it even touches the socket — the socket sits against
+// the inside of this wall, so every millimetre of wall is a millimetre off the
+// plug's insertion depth. At 3.2 most micro leads simply do not bottom out: the
+// moulded shell fouls the case first.
+//
+// It used to be 3.2 because the lid's groove was cut INTO the wall top and
+// needed a lip either side of a 1.2mm slot. The rib hangs inside the wall now,
+// so nothing here is holding a slot open and the wall can be as thin as it
+// prints. Below about 1.05 the latch dimple has nothing left behind it. (mm)
+wall = 1.6;             // [1:0.05:6]
 
 // Floor thickness: the whole floor when the terminal recess is switched off,
 // or the thin part between the plinths when the floor relief is on. (mm)
@@ -254,7 +494,7 @@ lid_t = 2.0;            // [0.8:0.1:8]
 
 // Interior height above the floor. 0 = derive it, as the standoff plus the
 // board plus whatever stands on top of the board, which is as short as the box
-// can be and still close. Set a number to pin it.
+// can be and still close. Set a number to pin it. (mm)
 cavity_h = 0;           // [0:0.1:60]
 
 // Outer corner rounding (mm)
@@ -264,20 +504,30 @@ corner_r = 3.0;         // [1:0.1:12]
 /* [Closure] */
 
 // How the lid is held on
-closure = "friction";   // [friction:Tongue and groove only, screw:Corner screw bosses]
+closure = "friction";   // [friction:Rib and latches only, screw:Corner screw bosses]
 
-// Width of the lid slot. Sets the rib that drops into it, and what is left of
-// the lip either side. 1.2 in a 3.2mm wall gives 1.0mm lips and a 0.9mm rib —
-// everything at two 0.4mm perimeters or better, with 0.55mm of lip still under
-// the deepest point of a latch dimple. (mm)
-groove_w = 1.2;         // [0.4:0.05:3]
+// Thickness of the rib under the lid — the part that drops inside the wall and
+// locates it. 1.2 is three 0.4mm perimeters, stiff enough to carry the latch
+// balls without being so stiff it will not flex past them. It no longer has to
+// fit inside the wall, so it costs nothing in wall thickness. (mm)
+rib_w = 1.2;            // [0.4:0.05:3]
 
-// Depth of the slot in the wall top. The rib is this minus the clearance, so
-// it is also how much springy rib the latches have to work with. Deeper grips
-// and aligns better but costs height: the cavity has to be deep enough for the
-// slot to clear the wall openings, so every millimetre here is a millimetre on
-// the case until the board becomes the taller constraint again. (mm)
-groove_depth = 4.0;     // [0.5:0.1:6]
+// How far the rib hangs below the lid, into the cavity. This is how much springy
+// rib the latches have to work with, and how far the lid is located.
+//
+// THIS IS WHAT SETS THE CASE HEIGHT, and it is the only thing that does at any
+// sane component height. The rib drops inside the wall, so the USB opening has
+// to finish below it — and the socket is barely lower than the tallest thing on
+// the board, so the air left over the components comes out at almost exactly
+// rib_h + 0.1. Every millimetre here is a millimetre of wasted height, one for
+// one.
+//
+// 2.1 carries a 1.0mm latch ball with 0.55mm of rib above and below it, and is
+// chosen to just lose to the components: the cavity is the larger of
+// board_top + component_h and board_top + rib_h + 0.4, so anything up to
+// component_h - 0.4 costs no height at all. Below about 2.0 the ball is more
+// than half the rib and the latch loses its seat. (mm)
+rib_h = 2.1;            // [0.5:0.1:6]
 
 // Clearance all round the joint. Raise if the lid is tight. (mm)
 joint_clearance = 0.15; // [0:0.01:0.6]
@@ -314,10 +564,46 @@ latch_fit = 0.10;       // [0:0.02:0.4]
 // Opening in the near end wall, for the USB socket
 usb_opening = true;
 
-// USB opening width (mm)
+/* Which connector your board has. These are FLUSH MOUNT: the opening is the
+   socket's own metal shell plus a print fit, so the socket meets the wall
+   instead of a big hole being left for the plug to pass through. The plug then
+   mates from outside and its moulded shell sits against the case.
+   Nominal receptacle shells, before the fit is added:
+       Micro-USB B  7.5 x 2.5      Mini-USB B  7.7 x 4.0
+       USB-C        8.95 x 3.2     USB-A       13.0 x 5.7
+   Sockets vary less than cable overmoulds do, which is what makes flush mount
+   worth doing — but measure yours, and use Custom if it disagrees.
+
+   A flush opening has to LINE UP with the socket, which a generous one never
+   had to: it is positioned automatically from the board stack, because the
+   socket sits on the board's top face and nothing else decides where that is.
+   Watch the console, which prints where it landed. */
+usb_type = "micro";     // [micro:Micro-USB B, c:USB-C, mini:Mini-USB B, a:USB-A, custom:Custom - set usb_w / usb_h]
+
+/* How far the socket's shell stands PROUD of the board's edge. Measure it.
+   About 1mm is typical; some boards mount the socket flush.
+
+   Two things follow, and both matter more than they look.
+
+   It is the plug's reach. The board sits hard against the inside of the end
+   wall, so the socket's face ends up wall - usb_overhang from the outside — 0.6
+   at the defaults, not the full 1.6. That is the difference between a lead
+   seating and a lead fouling the case.
+
+   And it is why the opening is NOTCHED up to the wall's top edge. A nose that
+   overhangs has to END UP inside the wall, but it cannot GET there going
+   straight down: there is solid wall above the opening, and the board drops
+   vertically. The notch is the slot it slides down. Set this to 0 for a
+   flush-mounted socket and the notch goes away with it. (mm) */
+usb_overhang = 1.0;     // [0:0.05:4]
+
+// Opening width. Used only when usb_type = Custom, and taken as the finished
+// opening rather than a shell size, so include your own fit. (mm)
 usb_w = 12;             // [1:0.1:60]
 
-// USB opening height (mm)
+// Opening height. Used only when usb_type = Custom. This is usually what sets
+// how TALL the case is: the opening has to finish below the lid's rib, so the
+// cavity ends up as the opening's top plus rib_h. (mm)
 usb_h = 6;              // [1:0.1:40]
 
 // Opening in the far end wall
@@ -326,10 +612,15 @@ end_opening = false;
 // Far end opening width (mm)
 end_w = 8;              // [1:0.1:60]
 
-// Far end opening height (mm)
-end_h = 5;              // [1:0.1:40]
+// Far end opening height. 4.0 fits the cavity the case now has — it was 5,
+// sized when the lid sat 4.7mm higher, and turning the opening on simply
+// asserted. Unlike the USB end this is not positioned from anything, so it has
+// to fit under the lid on its own: opening_z + this <= cavity. (mm)
+end_h = 4;              // [1:0.1:40]
 
-// Height of both openings above the floor top (mm)
+// Height of the FAR END opening above the floor top. The USB opening is not
+// set here: it is positioned automatically to meet the socket on the board's
+// top face, which is the only place a flush mount can go. (mm)
 opening_z = 0.5;        // [0:0.1:30]
 
 
@@ -432,20 +723,204 @@ $fn = 64;               // [12:200]
 /* [Hidden] */
 
 
+// --- USB connector lookup --------------------------------------------------
+/* Flush-mount opening: the receptacle's own shell plus a fit. Defined up here
+   because opening_top, the cavity height, the openings themselves and both
+   opening asserts read them, and every one of those is further down the file.
+
+   usb_fit is the total slack, split either side. 0.6 is a bit over one 0.4mm
+   extrusion, which is enough to swallow the elephant's-foot on a wall printed
+   vertically without leaving the socket rattling. It is not a customizer knob
+   because Custom already lets you state the finished opening outright. */
+usb_fit = 0.6;
+
+usb_ow = usb_type == "micro" ? 7.50  + usb_fit
+       : usb_type == "c"     ? 8.95  + usb_fit
+       : usb_type == "mini"  ? 7.70  + usb_fit
+       : usb_type == "a"     ? 13.00 + usb_fit
+       : usb_w;
+
+usb_oh = usb_type == "micro" ? 2.50 + usb_fit
+       : usb_type == "c"     ? 3.20 + usb_fit
+       : usb_type == "mini"  ? 4.00 + usb_fit
+       : usb_type == "a"     ? 5.70 + usb_fit
+       : usb_h;
+
+// usb_z is further down, with board_drop — where the board sits is not settled
+// until the pin channel has had its say. See "Where the board actually sits".
+
+
 // --- Dupont preset lookup -------------------------------------------------
-// No struct type in the Customizer, so presets are a ternary chain.
+/* No struct type in the Customizer, so presets are a ternary chain.
+
+   There is no Custom entry, and no pin_pitch or custom_post to feed it. Those
+   three settings only did anything at ONE of the four dropdown values and sat
+   inert at the other three — a pitch slider that moves nothing is exactly the
+   broken slider this file keeps taking out. The three presets are the three
+   Dupont families; anything else is a different connector, not a tuning of
+   this one.
+
+   The last branch is a plain else rather than a test for 127, so the chain
+   cannot fall through to undef. That makes an out-of-range dupont_preset read
+   as 1.27 instead, which the assert below catches rather than letting you print
+   a micro-pitch case by accident. */
 
 pitch = dupont_preset == 254 ? 2.54
       : dupont_preset == 200 ? 2.00
-      : dupont_preset == 127 ? 1.27
-      : pin_pitch;
+      :                        1.27;
 
 post  = dupont_preset == 254 ? 0.64
       : dupont_preset == 200 ? 0.50
-      : dupont_preset == 127 ? 0.40
-      : custom_post;
+      :                        0.40;
 
-hole  = post + hole_clearance;
+assert(dupont_preset == 254 || dupont_preset == 200 || dupont_preset == 127,
+       str("dupont_preset ", dupont_preset, " is not one of the three Dupont ",
+           "families. Use 254 (2.54mm standard), 200 (2.00mm compact) or 127 ",
+           "(1.27mm micro). There is no Custom any more: pin_pitch and ",
+           "custom_post are gone, because they did nothing at every preset but ",
+           "that one."));
+
+/* The plastic surround, and why it is derived rather than a fourth entry in the
+   chain above.
+
+   A housing is moulded to TILE THE PITCH — that is the whole point of it, so a
+   row of connectors sits shoulder to shoulder on a header without fouling.
+   Its size is therefore not an independent measurement the way the post is: it
+   is the pitch, less the moulding gap that stops two of them jamming. 2.50 at
+   the 2.54 preset, 1.96 at 2.00 and 1.23 at 1.27 — three presets, three
+   numbers, no parameter of its own.
+
+   post_eff is what actually has to pass through the plate. Everything below
+   reads `hole`, so putting the choice HERE — in one place, above `hole` — is
+   what keeps the coupon, the template and the tray describing the same opening. */
+housing  = pitch - 0.04;
+post_eff = dupont_housing ? housing : post;
+
+hole  = post_eff + hole_clearance;
+
+/* What a BARE PIN needs, whatever the surround is doing. Two things want this
+   number and both want it for the same reason, so it is named once rather than
+   spelled out twice: the wire channel (a wire comes off a pin, not off a
+   housing) and the fit coupon's pin row (which has to keep answering "does my
+   pin grip" even with the surround on, or it is measuring the wrong thing).
+
+   With dupont_housing off this IS `hole`. With it on they part company — 1.00
+   against 2.86 at the 2.54 preset — which is exactly why it needs its own name. */
+pin_hole = post + hole_clearance;
+
+/* The wire channel is sized to the PIN, not to the surround, and that is the
+   difference between the feature working with a housing and being impossible
+   with one.
+
+   What travels along this channel is a WIRE coming off a pin — it is not a way
+   in for the connector, which arrives from below and goes UP through the plate.
+   So the thing it has to clear is the post, and the surround never enters into
+   it. Tying it to `hole` was right while `hole` was the post's; with a surround
+   it would ask for 2.86 on a 2.54 pitch, merge every channel into one slot down
+   the row, and take the whole inboard plinth wall with it.
+
+   At the post's width the rib between two channels is pitch - channel_w, the
+   same 1.54 mm it has always been, so the channels stay separate and printable
+   at every preset — surround or no surround. With the tick off this IS `hole`,
+   so nothing about the default part changes.
+
+   wire_channel_w overrides that width. It is clamped at the BOTTOM only:
+
+     channel_min   one 0.4mm extrusion. A slot narrower than the nozzle is not a
+                   slot — the slicer fills it — so asking for less gets 0.4.
+     channel_max   what the pitch leaves after two 0.4mm perimeters of rib. This
+                   is REPORTED, not enforced: see below.
+
+   There is deliberately NO upper clamp, and that is a correction. Clamping the
+   top at channel_max left the slider dead above 1.74 at the 2.54 preset — a
+   third of its travel doing nothing, which is the same broken slider as one
+   that asserts, just quieter. Past the pitch the channels simply MERGE, the way
+   pin_slot merges the holes and pocket_wall = 0 merges the pockets, and the row
+   becomes one continuous slot out through the plinth's side. That is a real
+   part — a full-length wire exit — not an error to be prevented.
+
+   Between the two the ribs are thinner than two perimeters but not yet gone.
+   That band warns rather than clamps, which is exactly how pocket_wall's own
+   too-thin dividers are handled: it prints, it is just fragile, and how fragile
+   depends on a nozzle the model cannot know.
+
+   The bottom clamp only applies to an EXPLICIT width. Left at 0 the derived
+   width is passed through untouched, so a pitch too fine for a pin-wide channel
+   still fails the rib check rather than being silently narrowed — there is no
+   request to honour in that case, only a default. */
+channel_min  = 0.4;
+channel_max  = max(channel_min, pitch - 0.8);
+
+channel_w = wire_channel_w <= 0 ? pin_hole
+                                : max(wire_channel_w, channel_min);
+
+/* Wide enough that one channel reaches its neighbour. Cut as ONE slot from
+   there on — a row of cubes at exactly `pitch` across on a `pitch` spacing
+   butts face to face, and butting one cut onto another is what gives this model
+   non-manifold edges and a negative genus. Same trap the pockets fell into. */
+channels_merged = channel_w >= pitch - 0.001;
+
+/* What the surround takes over, and why it could not be left set.
+
+   With dupont_housing on the opening is most of a pitch wide before
+   hole_clearance is added at all, so at the default clearance it is WIDER than
+   the pitch: 2.86 against 2.54. The plate between one hole and the next is then
+   negative material, and so is the wall between one pocket and the next. No
+   value of pocket_wall or pin_slot rescues that, because it is the connector's
+   own shape doing it.
+
+   wire_channels is NOT on this list. It used to be, on the reasoning that a
+   surround leaves no rib to run a channel through — but that was the surround's
+   width being applied to a cut that never needed it. Sized to the post, as
+   above, the channels are unaffected by the tick and stay entirely the user's.
+
+   So the tick derives these two rather than asserting against them — a slider
+   whose range is unreachable is a broken slider, and a checkbox that errors is
+   worse. The console says what was taken over, so nothing goes dead quietly.
+
+   Defined HERE, straight after `hole` and before `pocket`, for the same reason
+   `pocket` is: a forward reference at file scope is undef, it propagates in
+   silence, and this file has lost every pin pocket to exactly that three times
+   while OpenSCAD reported NoError. */
+pocket_wall_eff = dupont_housing ? 0     : pocket_wall;
+slot_on         = dupont_housing ? true  : pin_slot;
+
+/* The pocket is SQUARE — the same across the row as along it — and the pitch is
+   what sizes it. Along the row it can be at most pitch - pocket_wall_eff or it
+   touches its neighbour, and across the row there is no competing demand, so
+   there is nothing to gain by making the two differ. One number, one shape.
+
+   Never smaller than the hole above it, though: a pocket narrower than its own
+   hole would choke the pin it exists to receive. At the 1.27 preset that clamp
+   bites and the divider comes out thinner than asked, so pocket_gap reports what
+   was actually left and the check below compares it against the request rather
+   than trusting it.
+
+   Defined HERE, straight after `hole`, because half the file reads it: the
+   plinth width, the floor relief, the pin channel's opening and the pockets
+   themselves. Used above its assignment it is undef, which propagates silently
+   into the pocket cubes and deletes every pocket in the tray while the render
+   still reports NoError and a plausible genus. This file has been bitten by
+   exactly that twice. */
+pocket     = max(hole, pitch - pocket_wall_eff);
+pocket_gap = pitch - pocket;
+
+/* Whether the pockets still stand apart, or have run together into one trough.
+
+   This is a geometry decision, not just something to report. A pocket exactly
+   `pitch` long on a `pitch` spacing — pocket_wall at 0, or a plastic surround
+   at a clearance under the moulding gap — leaves each cube BUTTING its
+   neighbour face to face, and butting one cut exactly onto another is how this
+   model makes non-manifold edges. It renders Status: NoError and reports a
+   NEGATIVE genus, which is the tell.
+
+   So terminal_troughs() cuts one long trough instead of a row of touching
+   cubes whenever this is true. The two are exactly the same extent — the union
+   of the cubes runs trough_x0..trough_x1 the moment pocket >= pitch — so
+   nothing moves; what goes away is the interior faces that never had any
+   business being there. */
+pockets_merged = pocket_gap <= 0.001;
+
 
 /* Sealing the bottom does not take anything away: the holes, the troughs, the
    plinths and the wire channels all stay. It just puts a slab of floor_solid
@@ -454,38 +929,201 @@ hole  = post + hole_clearance;
    to go — and the case grows by that slab. */
 base_t = seal_bottom ? floor_solid : 0;
 
-// With the recess on, the floor is the trough plus the plate that carries the
-// holes. The trough is open at the bottom, so the connectors sink into it and
-// the wires drop straight out. Sealed or recess-off, it is a plain slab of
-// floor_solid — that is the base thickness.
-floor_t   = base_t + (terminal_recess ? terminal_len + (trough_w / 2) * tan(trough_roof_angle) + hole_plate_t : floor_solid);
-trough_roof_h = (trough_w / 2) * tan(trough_roof_angle);
-trough_z  = base_t + (terminal_recess ? terminal_len + trough_roof_h : 0);
-plate_z   = trough_z;                             // underside of the hole plate
 // what a pin actually has to pass through: the thin plate when the recess is
-// on, the whole floor when it is off
+// on, the whole floor when it is off. Independent of the pocket's depth, which
+// is why everything below can be settled before the floor is.
 plate_t   = terminal_recess ? hole_plate_t : floor_solid;
-// The hole has to start below the trough's ridge, not at it: at the apex the
-// trough is a knife edge, so a hole stopping there would never break through.
-hole_z0   = base_t + (terminal_recess ? terminal_len : 0);
-hole_h    = plate_z - hole_z0 + plate_t;
 
-/* How far the funnel actually opens out in the tray's hole plate.
+/* The pin channel's width and depth, and where the board ends up.
 
-   The funnel is a 45-degree chamfer, so its depth equals its width — and it is
-   capped at half the plate's thickness. That cap is not cosmetic: the funnel is
-   cut from the top down, so if it is deeper than the plate it breaks out of the
-   underside, and the hole's narrowest point stops being `hole` at all. The
-   coupon is the plate at its thinnest, so it fails first, which is exactly
-   backwards — the coupon exists to report the fit the case will give.
+   All of this sits ABOVE the floor because the pocket's depth now depends on
+   where the board lands, and the board lands on the header's strip — or in the
+   channel, if the channel is wide enough to swallow it. slot_min_depth is
+   plate_t outright rather than floor_t - plate_z; those are the same number
+   (the floor is the pocket plus the plate, and plate_z is the top of the
+   pocket), and writing it directly is what breaks the loop. */
+/* Width is clamped UP to the opening with a surround, rather than replaced by
+   it. pin_slot_w stays a live setting either way — ask for more than the
+   surround needs and you get it, the same as always; ask for less and you get
+   the least that lets the connector through, which is the only value that is
+   not simply broken. */
+slot_cut_w     = max(pin_slot_w > 0 ? pin_slot_w : hole,
+                     dupont_housing ? hole : 0);
+slot_min_depth = plate_t;
+slot_cut_d     = terminal_recess ? max(pin_slot_depth, slot_min_depth) : plate_t;
 
-   The angle is not a parameter because it has no manufacturing consequence: the
-   funnel faces up, so it never overhangs at any angle. The old lead_angle
-   claimed otherwise and defaulted to 65, which made the funnel 1.07mm deep in a
-   1.00mm coupon and reported holes about 0.1mm oversize — two whole steps of
-   the coupon's own scale. */
-lead_d = min(lead_in, plate_t / 2);
+/* The header's plastic strip drops into a channel wider than itself.
 
+   A plastic surround does NOT change this, and an earlier version of this file
+   wrongly assumed it did — it suppressed the drop on the reasoning that the
+   housings rise to the floor's top face and the strip lands on them. They do
+   rise, but they are not standing on anything: a housed Dupont is pushed up
+   from below and held by friction on its pin, over a trough that is open at the
+   underside. It follows the board down; it cannot hold the board up. The one
+   case where a connector does push back is a SEALED base, where it bottoms out
+   on the slab — and that already has its own warning about lifting the board.
+
+   So dupont_housing gets the ordinary rule. It forces slot_on, so with a
+   channel that swallows the spacers the board drops exactly as it would with
+   the tick off.
+
+   The test is strip_w, not pitch. What the board rests on is the plastic
+   spacers, and on a devkit those are wider than the pitch — about 3mm against
+   2.54. Testing the pitch would have said "drops" for a 2.6mm channel that a
+   3mm spacer actually bridges, and it is a measurement only the user has.
+
+   "At or wider", not "wider than", because a channel exactly the spacer's width
+   is the case you hit by setting them to the same number, and it is a drop, not
+   a bridge. The epsilon is written out rather than using `fuzz`, which is
+   declared further down this file and would be undef here — an undef comparison
+   is false, so the drop would silently never happen and the render would still
+   report NoError. */
+board_drop = (slot_on && terminal_recess && slot_cut_w + 1e-6 >= strip_w)
+           ? min(slot_cut_d, pcb_standoff) : 0;
+
+// board faces, both measured from the floor's top face
+board_under = pcb_standoff - board_drop;
+board_top   = board_under + board_t;
+
+/* How deep the pocket has to be, and it is the larger of two separate demands.
+
+   terminal_len is how much CONNECTOR you need to bury for it to finish flush.
+   The other is how much PIN there is to swallow: a tail longer than the pocket
+   comes out of the underside and the case rocks on it. They are not two names
+   for one thing — a longer pin does not make a connector bigger — but they both
+   land on this one dimension, so it takes whichever asks for more.
+
+   That is what makes pin_length change the case at last. It only ever grows it:
+   cut the pins short and the connector still needs its room, so lower
+   terminal_len too, or switch terminal_recess off and let the connectors hang
+   below. Solder straight to the board and you want terminal_recess off anyway —
+   there is no connector to bury and no pin to swallow. */
+pin_pocket_need = max(0, pin_length - board_under - hole_plate_t);
+pocket_d        = max(terminal_len, pin_pocket_need);
+
+/* With the recess on, the floor is exactly the pocket plus the plate that
+   carries the holes — nothing between them, because the pocket is square and
+   runs straight up to the plate's underside. Sealed or recess-off, it is a plain
+   slab of floor_solid. */
+floor_t   = base_t + (terminal_recess ? pocket_d + hole_plate_t : floor_solid);
+trough_z  = base_t + (terminal_recess ? pocket_d : 0);
+plate_z   = trough_z;                             // underside of the hole plate
+slot_break_z = plate_z;
+// The hole is the plate and only the plate. With a square trough there is no
+// taper below it to punch through first — the plate's underside IS the trough.
+hole_z0   = plate_z;
+hole_h    = plate_t;
+
+/* The holes have no lead-in chamfer, which takes a whole class of error out of
+   the model along with the feature. A funnel is cut from the top down, so it had
+   to be capped at half the plate or it broke out of the underside and the hole's
+   narrowest point stopped being `hole` at all — and the coupon, being the plate
+   at its thinnest, failed that first, which is exactly backwards for the part
+   whose job is reporting the fit the case will give. There was a lead_angle
+   before that, defaulting to 65 degrees, which cut 1.07mm into a 1.00mm coupon
+   and reported holes 0.1mm oversize. A plain bore cannot do any of that: it is
+   `hole` wide at the top, at the bottom and everywhere between. */
+
+
+/* The continuous pin channel — how wide, how deep, and how deep it MUST be.
+
+   Width is its own parameter because it is a different decision from the hole's.
+   At `hole` the channel is still a fit and the coupon still describes it; wider,
+   it is clearance and the pins float in it. Nothing downstream cares which,
+   so both are just slot_cut_w.
+
+   With the recess on, the depth is measured down from the floor's top face and
+   pin_slot_depth chooses it. With the recess off there is no trough under the
+   plate and nothing to choose: the channel goes through the same material the
+   holes went through, so it is plate_t deep and the parameter is ignored.
+
+   `slot_break_z` is the highest the channel's floor may sit and still let a pin
+   through, and with a square trough that is simply the plate's underside. The
+   pocket below is `pocket` wide from there all the way down, so the channel
+   either reaches the plate's underside and opens into the full trough, or stops
+   inside the plate and opens into nothing. There is no partial case any more —
+   the ridge used to give one, tapering the void so the channel could break into
+   a slit narrower than a pin, and half the arithmetic here existed to find the
+   height where that slit was still `hole` wide.
+
+   slot_min_depth is a FLOOR, and the depth is clamped up to it rather than
+   asserted against. Asking for less gets the least that works, and the console
+   says so. */
+slot_z0 = floor_t - slot_cut_d;   // the rest of this lives above floor_t
+
+/* Where the board actually sits, and the USB opening with it.
+
+   The board is carried on the header's plastic strip, and the strip lands on
+   the plinth tops. Switch pin_slot on and there may not BE a plinth top under
+   it any more: the channel is cut down the middle of the row, and if it is
+   wider than the strip the strip drops straight into it until it grounds on the
+   channel floor. The whole board goes down with it.
+
+   What the board rests on is the plastic spacers, so the test is slot_cut_w
+   against strip_w — about 3mm on a devkit, wider than the 2.54 pitch this used
+   to assume. At the default pin_slot_w = 3 the channel is exactly that, so the
+   spacers drop in and the board goes down with them. Set pin_slot_w = 0 and the
+   channel is `hole` wide, 1mm, the spacers bridge it, and switching pin_slot on
+   moves nothing.
+
+   How far it goes is capped by the BOARD, not the channel. The strip sinks
+   until either it grounds on the channel floor or the board's own underside
+   reaches the plinth top — and the board is the whole width of the case against
+   a channel a few millimetres wide, so it lands flat long before a deep channel
+   runs out. That cap is the strip's own height, which is what pcb_standoff is.
+   Without it a 3mm channel drops the board 3mm, puts its top face BELOW the
+   floor, and asks for a USB opening at a negative height.
+
+   This is not cosmetic. It moves the pins further into the pockets, moves the
+   board's top face away from the lid, and moves the USB socket — and a flush
+   opening that does not follow is a hole in the wrong place. */
+
+// the shell stands on the board's top face; back off half the fit to centre it
+usb_z = board_top - usb_fit / 2;
+
+/* The notch, and what a plug actually has to reach.
+
+   usb_notch_z is where the slot starts: at the profile's WIDEST point, so the
+   two merge without leaving ears. For a trapezoid that is its top edge; for the
+   obround it is mid-height, where the caps are at full width. */
+usb_notch   = usb_opening && usb_overhang > 0;
+usb_notch_z = usb_type == "c" ? usb_z + usb_oh / 2 : usb_z + usb_oh;
+usb_reach   = wall - usb_overhang;      // outer face to the socket's face
+
+/* How far the board is pushed off the USB end wall, and why it is only ever
+   pushed when there is NO opening.
+
+   The board sits hard against the inside of that wall so its socket lines up
+   with the opening. But the socket OVERHANGS the board's edge by usb_overhang,
+   so flush against the wall it is protruding usb_overhang INTO the wall — which
+   is exactly what you want when there is a hole there for it to protrude into.
+
+   Switch usb_opening off and there is no hole: that millimetre of socket is
+   then inside solid plastic, and the board cannot go in. So the board steps
+   back by the overhang and the socket's face lands on the wall's inner face
+   instead, fully inside the box.
+
+   The case grows by the same amount rather than the antenna bay absorbing it —
+   antenna_gap is clear air you measured for a reason, and silently eating it to
+   pay for this would be the wrong trade. With an opening this is 0 and nothing
+   moves at all. */
+usb_inset = usb_opening ? 0 : usb_overhang;
+
+
+/* How much of the channel's floor is actually open.
+
+   The trough is square, so once the channel reaches the plate's underside the
+   opening is the full pocket — no taper, no depth dependence. slot_ledge is
+   the solid shelf left each side when the channel is wider than the trough it
+   lands on.
+
+   The shelf is NOT an overhang, which is worth stating because it looks like
+   one on paper: it is the top of solid plinth, so it faces UP into the channel.
+   What it does mean is that a channel wider than the pocket is a wide slot over
+   a narrower hole, and only the pocket of it goes anywhere. Unlike before,
+   widening the trough now fixes that directly. */
+slot_void_w = terminal_recess ? pocket : 0;
+slot_ledge  = terminal_recess ? max(0, (slot_cut_w - slot_void_w) / 2) : 0;
 
 
 // --- Derived dimensions ---------------------------------------------------
@@ -500,58 +1138,118 @@ screw_pad = closure == "screw" ? boss_d : 0;
 pcb_l = board_l > 0 ? board_l : span + 2 * board_end_margin;
 pcb_w = board_w > 0 ? board_w : row_spacing + 2 * board_side_margin;
 
-// The board sits hard against the inside of the USB end wall, so its socket
-// lines up with the opening in that wall. That fixes the USB end, and the far
-// end is the board plus the antenna bay — so the length is the board, not the
-// header, plus the bay and two walls.
+/* The board sits hard against the inside of the USB end wall, so its socket
+   lines up with the opening in that wall. That fixes the USB end, and the far
+   end is the board plus the antenna bay — so the length is the board, not the
+   header, plus the bay and two walls.
+
+   The width is the larger of two demands, and that max is the point. It used to
+   come from the header alone and never looked at the board at all, so a board
+   grown past the case — by board_w, or by board_side_margin — was an assert
+   rather than a bigger case. Now whichever needs more room wins. At the
+   defaults the header wins and the case is the size it has always been. */
 length = length_override > 0 ? length_override
-       : 2 * wall + pcb_l + antenna_gap;
+       : 2 * wall + pcb_l + antenna_gap + usb_inset;
 width  = width_override  > 0 ? width_override
-       : row_spacing + 2 * side_margin + 2 * screw_pad;
+       : max(row_spacing + 2 * side_margin, pcb_w + 2 * wall) + 2 * screw_pad;
 
 inner_l = length - 2 * wall;
 inner_w = width  - 2 * wall;
 inner_r = max(corner_r - wall, 0.5);
 
+/* The gap the board actually got. It is derived, not requested — you set where
+   the wall goes (side_margin) and where the board's edge is
+   (board_side_margin), and the gap is whatever is left between them. Reported
+   by echo() and checked below, so it is a number you can read rather than one
+   you compute from three parameters. Length is measured at the far end only;
+   the USB end is flush by design. */
+/* Both gaps go through snap() because both are differences that can be exactly
+   zero. When the board is what sets the size, inner_w is pcb_w with 2 x wall
+   added and then taken away again, and the gap comes back as 3.6e-15 rather
+   than 0 — noise in the console, and worse than noise in the assert below,
+   which compares the two and would fail on the wrong side of a rounding error.
+   A nanometre is far below anything an STL or a printer resolves. */
+fuzz = 1e-6;
+function snap(x) = abs(x) < fuzz ? 0 : x;
+
+board_gap_side = snap((inner_w - pcb_w) / 2);
+board_gap_end  = snap(inner_l - pcb_l);
+
 // How deep the cavity has to be: enough for the standoff, the board and
-// whatever stands on top of it, and enough that the lid's groove clears the
+// whatever stands on top of it, and enough that the lid's rib clears the
 // openings cut in the walls. The second one usually wins, because the floor
 // already carries the sockets high — if you want a shorter case, terminal_len
 // is a far bigger lever than this.
-opening_top = max(usb_opening ? opening_z + usb_h : 0,
+// how high the openings reach. The cavity no longer derives from this — the rib
+// is notched around both openings — but the height notes still quote it.
+opening_top = max(usb_opening ? usb_z + usb_oh : 0,
                   end_opening ? opening_z + end_h : 0);
+/* The cavity's two demands, named so the console can say which one won.
+
+   cav_board is what is standing on the board. cav_joint is the lid's rib having
+   to clear the BOARD — not the socket, which is the whole point of notching the
+   rib. The rib hangs around the perimeter and only overlaps the board at the
+   USB end, where the socket is; cut the rib away over the socket's width and
+   the tallest thing it still has to miss is the board's own top face.
+
+   That is worth 2.6mm. Clearing the socket meant opening_top + rib_h + 0.4 =
+   8.5; clearing the board is board_top + rib_h + 0.4 = 5.7, which loses to the
+   components at 5.9 — so component_h finally sets the cavity, which is what it
+   always claimed to do. */
+/* The socket is a component like any other, and the cavity has to allow for it.
+   component_h is what YOU measured standing on the board; usb_shell_h is what
+   the connector preset already knows. Taking the larger means a tall socket
+   cannot be forgotten — pick usb_type = "c" with its 3.2mm shell against a
+   component_h of 2.5 and the lid would otherwise close onto the socket by
+   0.7mm. For a custom opening the shell is assumed usb_fit smaller than the
+   hole, which is the same relationship the presets have.
+
+   NOT conditional on usb_opening. It used to be, and that was wrong: switching
+   the opening off removes the hole in the WALL, not the socket from the BOARD.
+   The socket still stands there and the lid still has to clear it. Zeroing this
+   let the cavity forget it entirely — a USB-A devkit with the opening off had
+   the lid closing onto its socket by 3.2mm, rendering clean the whole way. */
+usb_shell_h = usb_oh - usb_fit;
+cav_board   = board_top + max(component_h, usb_shell_h);
+cav_joint = board_top + rib_h + 0.4;
+
 cavity = cavity_h > 0 ? cavity_h
-       : max(pcb_standoff + board_t + component_h,
-             opening_top + groove_depth + 0.4);
+       : max(cav_board, cav_joint);
 
 wall_h = floor_t + cavity;
+
+/* The lid's tab, which fills the notch when the case is closed.
+
+   The notch has to reach the wall's top edge or the nose cannot get in, which
+   leaves a slot above the socket that the lid's rib does not cover — the rib
+   sits INSIDE the wall, and the notch is the wall. So the lid grows a tab in
+   the wall's own thickness that drops into it, and the end wall reads as solid
+   again from outside.
+
+   It starts above the OPENING's top, not the notch's. For the obround the notch
+   begins at mid-height so it can merge cleanly, and a tab following it down
+   there would land on the socket.
+
+   Down here because it needs wall_h, which is floor_t plus the cavity, and the
+   cavity is not known until the opening it has to clear has been placed. */
+/* How much wall is left standing above the opening. Drop the lid far enough and
+   the answer is none: the cavity shrinks until the opening's top IS the wall's
+   top edge, and then there is nothing for the nose to get past and nothing to
+   notch. Clamped at 0 because it goes negative there, and a negative notch is a
+   cube with a negative side. */
+usb_wall_above = max(0, wall_h - floor_t - usb_z - usb_oh);
+
+usb_tab_z = usb_z + usb_oh + joint_clearance;
+usb_tab_h = wall_h - floor_t - usb_tab_z;
+usb_tab_w = usb_ow - 2 * joint_clearance;
 
 row_a_y = (width - row_spacing) / 2;
 row_b_y = (width + row_spacing) / 2;
 
-pcb_x = wall;                                // flush to the USB end wall
-pcb_y = (width  - pcb_w) / 2;
+pcb_x = wall + usb_inset;                    // flush, unless there is no opening
 
 // the header is soldered to the board, so it goes where the board goes
 x_first = pcb_x + (pcb_l - span) / 2 + pin_x_offset;
-
-// --- PCB rests ------------------------------------------------------------
-// Two pads at each end, in the board's own corners, rather than a bar across
-// the full width: the header pins already carry and locate the board, so the
-// rests only have to stop it rocking. Each pad is trimmed to the room between
-// the board's edge and the nearest pin hole, so a rest can never cap a hole.
-
-pad_w   = min(ledge_w, pcb_w / 2);
-
-// Clear the funnels, not just the holes: the lead-in opens out to lead_in past
-// the hole on every side, and a pad that clips a funnel rim hangs 0.1mm over
-// the void and shows up as a flat overhang.
-header_x0 = x_first - hole / 2 - lead_d;
-header_x1 = x_first + span + hole / 2 + lead_d;
-near_room = header_x0 - pcb_x;
-far_room  = (pcb_x + pcb_l) - header_x1;
-near_ledge_d = min(ledge_d, max(near_room - 0.2, 0));
-far_ledge_d  = min(ledge_d, max(far_room  - 0.2, 0));
 
 // --- Floor relief ---------------------------------------------------------
 // Only the strips carrying the troughs need the full floor depth. The rest of
@@ -560,39 +1258,43 @@ far_ledge_d  = min(ledge_d, max(far_room  - 0.2, 0));
 // the old floor top, which is why the case outside is untouched.
 
 relief   = terminal_recess && floor_relief;
-plinth_w = trough_w + 2 * plinth_wall;
+plinth_w = pocket + 2 * plinth_wall;
 
-/* Where the wire channel starts and ends, both measured from the hole's centre.
+/* How far the wire channel runs, measured from the hole's centre.
 
-   The neck holds the pin in its hole; past it the channel opens out to wire_w
-   and runs until it is clear through the plinth's side face, which is what
-   gives the wire somewhere to go. Stopping inside the plinth would leave a
-   pocket the wire could never get out of.
+   Far enough to break clear through the plinth's side face, which is the whole
+   point — that is what gives the wire somewhere to go. Half the plinth plus a
+   little, so it cannot land exactly on the face and leave a zero-thickness
+   skin. Stopping short would leave a pocket the wire could never get out of,
+   which is why this is derived rather than offered as a number to get wrong.
 
    The channel is cut through the full height of the hole, not sunk from the
    plinth's top. That matters: a groove in the top face would never reach the
    trough, so no wire could get into it from below. Full height, it meets the
    trough void where it crosses the trough's sloping roof. */
-neck_w        = slot_w > 0 ? slot_w : hole;
-slot_neck_end = hole / 2 + slot_neck;
-slot_reach    = slot_depth > 0 ? slot_depth : plinth_w / 2 + 0.6;
+slot_reach = plinth_w / 2 + 0.6;
 
 /* How far the channel reaches BELOW the hole.
 
    Without this the channel would start level with the trough's shoulder, and
-   its mouth into the trough would be only (trough_w/2 - slot_neck_end) wide —
-   0.4mm at the defaults, which no wire fits through. Dropping the channel by a
-   wire's width opens a mouth that tall into the trough's straight-sided
-   section, so the wire can actually turn the corner and come out.
+   its mouth into the trough would be a sliver, which no wire fits through.
+   Dropping the channel by its own width opens a mouth that tall into the
+   trough's straight-sided section, so the wire can turn the corner and come
+   out. One width down for one width across — the channel is square in section
+   where it meets the trough.
 
    Only with the recess on: without a trough there is nothing below the hole to
    open into, and dropping the cut would just breach the underside of the floor. */
-channel_drop = terminal_recess ? wire_w : 0;
+channel_drop = terminal_recess ? channel_w : 0;
 
-// the same x extent terminal_troughs() extrudes over, so the plinth and the
-// trough it carries cannot drift apart
-trough_x0 = x_first - hole / 2 - trough_end_margin;
-trough_x1 = x_first + span + hole / 2 + trough_end_margin;
+
+// the same x extent terminal_troughs() covers, so the plinth and the pockets it
+// carries cannot drift apart. The end pockets stand pocket/2 proud of the end
+// pins, and that is the whole extent now — there is no trough_end_margin any
+// more, because with a pocket per pin the pocket's own size is what gives you
+// room to get at the end connectors.
+trough_x0 = x_first - pocket / 2;
+trough_x1 = x_first + span + pocket / 2;
 
 // a sliver of relief left between a plinth end and the interior wall would be
 // a slot too narrow to print, so close the gap when it gets that small
@@ -601,18 +1303,29 @@ plinth_x0 = (trough_x0 - plinth_wall) - wall < 1 ? wall - 0.5
 plinth_x1 = (length - wall) - (trough_x1 + plinth_wall) < 1 ? length - wall + 0.5
                                                             : trough_x1 + plinth_wall;
 
-// tongue-and-groove, both cut from the same insets so they cannot disagree
-groove_a = (wall - groove_w) / 2;      // outer inset
-groove_b = groove_a + groove_w;        // inner inset
-groove_z = wall_h - groove_depth;
-tongue_h = groove_depth - joint_clearance;
+/* The joint: a rib under the lid that drops INSIDE the wall.
+
+   There is no groove in the tray any more. A slot milled into the wall top needs
+   its own width plus a lip either side — 1.2 + 1.0 + 1.0 — which is what forced
+   a 3.2mm wall, and a 3.2mm wall is 3.2mm of reach a USB plug has to find before
+   it even gets to the socket. Most leads do not have it. Hanging the rib inside
+   the wall instead asks nothing of the wall's thickness at all, so the wall can
+   be as thin as it wants to be and the socket comes to meet the plug.
+
+   The lid's plate still lands on the wall top, so the joint looks the same from
+   outside; the rib now locates it from within rather than sitting in a slot. */
+rib_a    = wall + joint_clearance;     // rib's outer face, clear of the wall
+rib_b    = rib_a + rib_w;              // rib's inner face
+tongue_h = rib_h;                      // the rib hangs its full depth into air
 
 /* Ball latches. The ball is a half round, so its radius is also how far it
    stands proud of the rib: clearing the joint clearance first, then biting
-   latch_grip into the slot wall. It sits on the rib's inner face, so the
-   dimple opens into the cavity rather than showing on the outside. */
+   latch_grip into the wall. It has moved to the rib's OUTER face — there is no
+   slot wall on the inside to bite any more, and the wall itself is what the rib
+   now meets. The dimple still opens into the cavity rather than showing
+   outside, because it is cut into the wall's inner face. */
 latch_r = joint_clearance + latch_grip;
-latch_y = groove_b - joint_clearance;      // the rib's inner face
+latch_y = rib_a;                           // the rib's outer face
 latch_z = -tongue_h / 2;                   // lid-local, mid-height of the rib
 
 // Artwork is laid down a quarter turn clockwise from how it is drawn, so the
@@ -647,8 +1360,20 @@ label_y_est = abs(sin(label_rotate)) * label_len_est
             + abs(cos(label_rotate)) * label_size;
 
 // how far the pins stick out below the case, reported by echo() below
-pin_free  = pcb_standoff + hole_plate_t;
-pin_engage = pin_length - pin_free;   // pin left inside the trough to grip
+/* plate_t, not hole_plate_t. With the recess on they are the same thing, but
+   with it off the pin has to cross the WHOLE floor — floor_solid, 2.0 — and
+   using the plate's thickness there overstated the grip by a millimetre in the
+   one configuration where pins are already shortest. */
+pin_free  = board_under + plate_t;    // pin spent crossing the floor
+pin_engage = pin_length - pin_free;   // pin left inside the pocket to grip
+
+/* How far the pin tails hang out of the bottom of the case, if they do.
+
+   Sealed, they cannot — they bottom out on the slab and lift the board, which
+   is the check further down. Open, which is the default, there is nothing
+   underneath them and a long tail simply comes out through the pocket and
+   stands the case off the desk. */
+pin_protrude = max(0, pin_length - board_under - floor_t);
 
 
 // --- Sanity checks --------------------------------------------------------
@@ -664,59 +1389,355 @@ assert(row_a_y - hole / 2 >= wall,
            " with a ", hole, " hole reaches ", row_a_y - hole / 2,
            " but the wall ends at ", wall, ". Raise side_margin."));
 
-// the channels sit one per pin, so anything approaching the pitch merges them
-// into a single long slot and takes the plate's inboard support with it
-assert(!wire_channels || wire_w + 0.8 <= pitch,
-       str("wire_w ", wire_w, " leaves only ", pitch - wire_w,
-           " mm of rib between one channel and the next at a ", pitch,
-           " pitch. Below 0.8 the channels merge and the hole plate loses the ",
-           "shoulder holding it up. Lower wire_w."));
 
-assert(2 * groove_b < min(inner_l, inner_w),
-       str("The tongue-and-groove joint meets itself: 2 x ", groove_b,
+/* The hole is the post plus hole_clearance, so it is a clearance hole by
+   construction — 0.18mm each side at every preset, a hole 56% wider than the pin
+   at 2.54 and 90% wider at 1.27. That is why removing the lead-in funnel costs
+   so little: a pin was never being pressed into an interference fit that a
+   chamfer had to open up.
+
+   At hole_clearance = 0 that stops being true. The hole is then exactly the
+   post, printing shrinks a small hole slightly, and there is no funnel left to
+   disguise it. */
+if (hole_clearance < 0.1)
+    echo(str("WARNING: hole_clearance ", hole_clearance, " leaves only ",
+             hole_clearance / 2, " mm each side of a ", post, " mm pin, so the ",
+             "hole is barely a clearance hole at all — and once the print ",
+             "shrinks it, an interference one. The holes are plain bores with ",
+             "no funnel to guide a pin in. Print part = \"coupon\" and find the ",
+             "clearance that actually grips before committing to a case."));
+
+/* The channels sit one per pin, so anything approaching the pitch merges them
+   into a single long slot and takes the plate's inboard support with it.
+
+   A channel is exactly a PIN hole wide, so the rib between two channels is
+   pitch - channel_w, which is the same rib as between two holes whenever the
+   holes are the pin's too. So this is really the plate's own printability
+   rather than a separate channel constraint. It bites at the 1.27 micro preset,
+   where that rib is 0.51mm, and pin_slot does not rescue it: the channels run
+   ACROSS the plate, so they need the pitch whether the pins sit in holes or in
+   one long channel.
+
+   channel_w rather than hole, which is what lets the channels survive a plastic
+   surround: the surround widens the way IN for the connector, not the way OUT
+   for a wire, so it must not be allowed to fail this check on the channel's
+   behalf. With the tick off the two are the same number and this is unchanged. */
+/* Only the DERIVED width can be rejected here. An explicit wire_channel_w is a
+   stated intention, and the two bands above channel_max are reported instead:
+   thin ribs get a warning, merged channels get a note. Left at 0 there is no
+   intention to honour — just a default that does not fit — so this stands, and
+   its message names the lever that fixes it. */
+assert(!wire_channels || wire_channel_w > 0 || channel_w + 0.8 <= pitch,
+       str("At a ", pitch, " pitch the derived ", channel_w,
+           " mm channel leaves only ", pitch - channel_w,
+           " mm of plate between one pin and the next, under two 0.4mm ",
+           "perimeters. Set wire_channel_w to ", channel_max,
+           " or less and it fits — that is the direct lever, and it is what ",
+           "makes wire channels possible at this pitch at all. Or switch ",
+           "wire_channels off, use a coarser preset, or lower hole_clearance (",
+           hole_clearance, "), which is what sets the width while ",
+           "wire_channel_w is 0. A plastic surround does not affect any of it."));
+
+// asked for less than one extrusion: clamped up, because a slot narrower than
+// the nozzle is not a slot at all — the slicer just fills it
+if (wire_channels && wire_channel_w > 0 && wire_channel_w < channel_min)
+    echo(str("NOTE: wire_channel_w ", wire_channel_w, " was raised to ",
+             channel_w, " mm. Under 0.4 mm a slot is narrower than one ",
+             "extrusion, so it would print as solid plate rather than as a ",
+             "channel."));
+
+/* The band between "printable ribs" and "no ribs at all". It renders and it
+   prints; the ribs are just thin. Warned rather than clamped, exactly as
+   pocket_wall's too-thin dividers are — clamping here is what left the slider
+   dead above channel_max in the first place. */
+if (wire_channels && !channels_merged && pitch - channel_w < 0.8)
+    echo(str("WARNING: a ", channel_w, " mm wire channel leaves only ",
+             pitch - channel_w, " mm of plate between one pin and the next, ",
+             "under two 0.4mm perimeters — the ribs will print as a single ",
+             "bead rather than a wall, and will be fragile. ", channel_max,
+             " mm is the widest that keeps two perimeters; ", pitch,
+             " mm and over merges the channels into one slot instead, which is ",
+             "sound again."));
+
+/* Past the pitch there are no ribs left, and the row is one continuous slot out
+   through the plinth's side. That is a legitimate part — a full-length wire
+   exit — but it is invisible in a render, and it gives up the one thing the
+   separate channels were doing, so it gets said. */
+if (wire_channels && channels_merged)
+    echo(str("NOTE: wire_channel_w ", wire_channel_w, " is at or past the ",
+             pitch, " mm pitch, so the wire channels MERGE into one continuous ",
+             channel_w, " mm slot down each row rather than staying one per ",
+             "pin. The plate between pins is gone, and with it the last thing ",
+             "locating the header along the row — the board's own fit against ",
+             "the walls is what holds it now. Cut as a single slot, not as ",
+             "touching cubes, so the mesh stays sound."));
+
+assert(2 * rib_b < min(inner_l, inner_w),
+       str("The lid's rib meets itself: 2 x ", rib_b,
            " exceeds the smaller interior dimension ", min(inner_l, inner_w),
-           ". Lower groove_w or raise the case size."));
+           ". Lower rib_w or raise the case size."));
 
-assert(groove_depth < wall_h - floor_t,
-       str("groove_depth ", groove_depth, " is deeper than the wall above the floor (",
+/* What the cavity cost, and which of its two demands set it.
+
+   Almost always the joint: the USB opening has to finish below the lid's rib,
+   and the socket sits barely lower than the tallest thing on the board, so the
+   air left over the components works out at about rib_h + 0.1 whatever
+   the components are. Said out loud because "make the case shorter" sends people
+   to component_h, which is the one lever that cannot do it. */
+if (cavity_h == 0 && cav_joint > cav_board + fuzz)
+    echo(str("NOTE: the cavity is ", cavity, " mm, set by the lid's rib ",
+             "clearing the board (", cav_joint, ") rather than by what is ",
+             "standing on it (", cav_board, "). That leaves ",
+             snap(cavity - cav_board),
+             " mm of air over the tallest component. Lower rib_h to ",
+             snap(max(component_h, usb_shell_h) - 0.4),
+             " or less and the components set the height instead, which is as ",
+             "low as the lid goes."));
+
+// the good case, worth saying so you know nothing is being wasted
+if (cavity_h == 0 && cav_joint <= cav_board + fuzz)
+    echo(str("NOTE: the cavity is ", cavity, " mm and the lid lands on the ",
+             "components — ", snap(cavity - cav_board),
+             " mm of air over the tallest one. The rib wants ", cav_joint,
+             ", which is under it, so nothing is being spent on the joint."));
+
+/* The overhang is the plug's whole story, so say what it left. */
+if (usb_opening && usb_overhang > 0)
+    echo(str("NOTE: the socket overhangs the board by ", usb_overhang,
+             " mm, so its face sits ", usb_reach,
+             " mm inside the outer wall — that is what a plug has to reach past ",
+             "before it touches the socket, not the full ", wall,
+             " mm of wall. The opening is notched to the wall's top edge so the ",
+             usb_wall_above > 0
+               ? str("nose can slide down into place; without that the board ",
+                     "cannot go in, because there is ", usb_wall_above,
+                     " mm of solid wall above the opening.")
+               : str("nose can slide straight in — the lid sits low enough ",
+                     "that the opening already reaches the wall's top edge, so ",
+                     "there is no wall above it to notch and none to get past.")));
+
+assert(!usb_opening || usb_overhang <= wall,
+       str("The socket overhangs ", usb_overhang,
+           " mm but the wall is only ", wall,
+           " mm thick, so the socket would stand proud of the outside of the ",
+           "case. Raise wall, or measure the overhang again."));
+
+/* The dimple is cut into the wall's inner face now, not into a slot wall, so a
+   thin wall is the thing that runs out. The pocket reaches latch_r + latch_fit
+   from the rib's outer face, which is joint_clearance proud of the wall, so it
+   eats (latch_r + latch_fit - joint_clearance) into it. */
+if (latches && latch_count > 0
+    && wall - (latch_r + latch_fit - joint_clearance) < 0.8)
+    echo(str("WARNING: the latch dimple leaves only ",
+             wall - (latch_r + latch_fit - joint_clearance),
+             " mm of wall behind it, under two 0.4mm perimeters — it will show ",
+             "through, or blow out. Raise wall above ",
+             0.8 + latch_r + latch_fit - joint_clearance,
+             ", lower latch_grip, or switch latches off."));
+
+/* The latch ball is a half-round of latch_r, so it stands 2 x latch_r across the
+   rib's face. Sink the groove far enough and the ball is most of the rib, with
+   nothing left above or below to hold it — the lid still renders and still
+   clicks in the preview, it just stops having a seat. */
+if (latches && latch_count > 0 && tongue_h < 4 * latch_r)
+    echo(str("WARNING: the lid rib is only ", tongue_h, " mm tall carrying a ",
+             2 * latch_r, " mm latch ball, so there is just ",
+             (tongue_h - 2 * latch_r) / 2,
+             " mm of rib above and below it. Raise rib_h to ",
+             4 * latch_r, " or lower latch_grip."));
+
+assert(rib_h < wall_h - floor_t,
+       str("rib_h ", rib_h, " hangs deeper than the cavity itself (",
            wall_h - floor_t, "). Lower it or raise cavity_h."));
 
-// the board is flush to the USB wall by design, so there is no clearance to
-// check at that end — only across the width, and in the bay past the far edge
-assert(pcb_l <= inner_l && pcb_w + 2 * board_clearance <= inner_w,
+/* The board is flush to the USB wall by design, so there is no clearance to
+   check at that end — only across the width, and in the bay past the far edge.
+
+   On the auto sizes this can no longer fail: the width takes the larger of the
+   header's demand and the board's, so the case grows to meet the board rather
+   than the board outgrowing the case. What is left for it to catch is an
+   override, which is a flat number that knows nothing about the board — hence
+   the different advice. */
+assert(board_gap_end >= 0 && board_gap_side >= 0,
        str("The PCB does not fit the interior: board is ", pcb_l, " x ", pcb_w,
-           ", interior is ", inner_l, " x ", inner_w,
-           ". Raise antenna_gap or side_margin, or lower the board size."));
+           " but the interior is only ", inner_l, " x ", inner_w, ". ",
+           width_override > 0 || length_override > 0
+             ? str("That is an override talking: width_override / ",
+                   "length_override are flat numbers and do not grow with the ",
+                   "board. Raise them, or set them to 0 to size the case ",
+                   "automatically.")
+             : "Raise antenna_gap or side_margin, or lower the board size."));
 
-assert(!usb_opening || opening_z + usb_h + groove_depth <= cavity,
-       str("The USB opening runs up into the lid's groove: it tops out ",
-           opening_z + usb_h, " above the floor, but the groove starts at ",
-           cavity - groove_depth, ". Raise cavity_h, or lower usb_h/opening_z."));
+/* The gap is derived now, so nothing stops it being too small to use. A board
+   has to DROP in: below about half an extrusion width the slot is tighter than
+   the printer's own repeatability, and the board either jams or needs forcing
+   past the pins. Warned rather than asserted — it prints, and a press fit may
+   even be what you want for a board you never intend to remove. */
+if (board_gap_side < 0.2)
+    echo(str("WARNING: only ", board_gap_side, " mm each side between the ",
+             "board and the wall — that is a press fit, not a drop-in. Raise ",
+             "side_margin (currently ", side_margin, ", and the width follows ",
+             "it above ", board_side_margin + wall, ") or lower ",
+             "board_side_margin (currently ", board_side_margin, ")."));
 
-assert(!end_opening || opening_z + end_h + groove_depth <= cavity,
-       str("The far end opening runs up into the lid's groove: it tops out ",
-           opening_z + end_h, " above the floor, but the groove starts at ",
-           cavity - groove_depth, ". Raise cavity_h, or lower end_h/opening_z."));
+if (board_gap_end < 0.2)
+    echo(str("WARNING: only ", board_gap_end, " mm past the board's far edge, ",
+             "so it is a press fit lengthwise and the antenna is hard against ",
+             "the end wall. Raise antenna_gap (currently ", antenna_gap, ")."));
 
-assert(!usb_opening || usb_w <= inner_w,
-       str("usb_w ", usb_w, " exceeds the interior width ", inner_w, "."));
+/* The USB opening has no rib to clear — the rib is notched away over its width,
+   which is what lets the lid come down onto the components. What the rib still
+   has to miss is the BOARD it hangs over, and that is the check. It only bites
+   when cavity_h is pinned by hand; the derived cavity already includes it. */
+assert(cavity - rib_h >= board_top,
+       str("The lid's rib reaches ", cavity - rib_h,
+           " above the floor but the board's top face is at ", board_top,
+           ", so the rib would land on the board. Raise cavity_h to at least ",
+           board_top + rib_h, ", or lower rib_h."));
+
+// the far end opening's rib is notched away too, so what is left to check is
+// that the opening fits under the lid at all
+assert(!end_opening || opening_z + end_h <= cavity,
+       str("The far end opening runs out of the top of the case: it tops out ",
+           opening_z + end_h, " above the floor, but the cavity is only ",
+           cavity, " deep. Raise cavity_h, or lower end_h/opening_z."));
+
+// Spelled out rather than a search() over a list: search() on a string matches
+// per CHARACTER, which quietly passed "micro" and rejected "c".
+assert(usb_type == "micro" || usb_type == "c" || usb_type == "mini"
+       || usb_type == "a" || usb_type == "custom",
+       str("Unknown usb_type \"", usb_type,
+           "\". Use micro, c, mini, a or custom. Anything else falls through ",
+           "to usb_w / usb_h without telling you."));
+
+assert(!usb_opening || usb_ow <= inner_w,
+       str("The ", usb_type, " USB opening is ", usb_ow,
+           " mm wide, more than the ", inner_w, " mm interior."));
 
 assert(!end_opening || end_w <= inner_w,
        str("end_w ", end_w, " exceeds the interior width ", inner_w, "."));
 
-assert(!terminal_recess || trough_w > hole,
-       str("trough_w ", trough_w, " is narrower than the pin hole ", hole,
-           ". Widen the trough."));
+// pocket is clamped to at least `hole`, so this can only fail if the clamp
+// itself is wrong — it is here to catch that, not the user
+assert(!terminal_recess || pocket >= hole,
+       str("The pocket ", pocket, " is narrower than the pin hole ", hole,
+           " above it, which would choke the pin. Lower pocket_wall."));
 
-assert(!terminal_recess || row_a_y - trough_w / 2 >= wall,
-       str("The terminal troughs cut into the side wall: they reach ",
-           row_a_y - trough_w / 2, " but the wall ends at ", wall,
-           ". Raise side_margin or narrow trough_w."));
+/* Whether you actually got separate pockets, or one slot wearing their name.
 
-assert(!terminal_recess || 2 * (row_a_y + trough_w / 2) < width ||
-       row_b_y - trough_w / 2 > row_a_y + trough_w / 2,
-       str("The two terminal troughs overlap in the middle. Raise row_spacing ",
-           "or narrow trough_w."));
+   Reported rather than asserted, because a merged row is not broken — it is the
+   old continuous trough, and at 2.54 pitch it is the only thing a full-width
+   crimp terminal fits into. But it is not what "a hole per pin" looks like, and
+   the difference is invisible in a render, so it gets said out loud.
+
+   Skipped with a surround on, which merges them for a reason of its own and has
+   already said so: blaming pocket_wall there names a setting the user did not
+   touch and tells them to raise something that is now ignored. */
+if (terminal_recess && !dupont_housing && pockets_merged)
+    echo(str("NOTE: pocket_wall is 0, so the pockets touch and merge into one ",
+             "continuous slot down each row rather than staying separate. That ",
+             "is the older behaviour, and at a ", pitch, " mm pitch it is what ",
+             "a full-width crimp terminal needs. Raise pocket_wall to divide ",
+             "them."));
+
+// the hole clamp beat the request: a fine pitch cannot give both a pin-sized
+// pocket and a printable divider, and the pin has to win
+if (terminal_recess && pocket_gap > 0.001 && pocket_gap < pocket_wall_eff - 0.001)
+    echo(str("NOTE: pocket_wall ", pocket_wall_eff, " would leave a pocket only ",
+             pitch - pocket_wall_eff, " mm long, narrower than the ", hole,
+             " mm hole above it, so the pocket was held at ", pocket,
+             " mm and the divider came out ", pocket_gap, " mm instead. At a ",
+             pitch, " mm pitch that is as much wall as a pin-sized pocket ",
+             "leaves."));
+
+if (terminal_recess && pocket_gap > 0.001 && pocket_gap < 0.8)
+    echo(str("WARNING: only ", pocket_gap, " mm of wall between one pocket and ",
+             "the next — under two 0.4mm perimeters, so the dividers print as ",
+             "a single bead rather than a wall. They will be fragile."));
+
+/* pocket_wall is the lever normally, but a surround holds it at 0 and sizes the
+   pocket from the pitch instead, so the advice has to change with it. */
+pocket_lever = dupont_housing
+             ? "or untick dupont_housing — the plastic surround is what made the pocket this big"
+             : "or raise pocket_wall to shrink the pocket";
+
+assert(!terminal_recess || row_a_y - pocket / 2 >= wall,
+       str("The terminal pockets cut into the side wall: they reach ",
+           row_a_y - pocket / 2, " but the wall ends at ", wall,
+           ". Raise side_margin, ", pocket_lever, "."));
+
+assert(!terminal_recess || 2 * (row_a_y + pocket / 2) < width ||
+       row_b_y - pocket / 2 > row_a_y + pocket / 2,
+       str("The two rows of pockets overlap in the middle. Raise row_spacing, ",
+           pocket_lever, "."));
+
+/* A channel that stops inside the plate never reaches the trough at all, so the
+   pin stops on plastic — while the render looks perfectly healthy, because the
+   cut is clean and the case is still manifold. Clamped up to the minimum rather
+   than rejected; this only reports it.
+
+   With a square trough the minimum is just hole_plate_t, which is a far simpler
+   thing to explain than it was when a tapering roof made it depend on the trough
+   and the roof angle too. */
+if (slot_on && terminal_recess && pin_slot_depth < slot_min_depth)
+    echo(str("NOTE: pin_slot_depth ", pin_slot_depth, " does not get through ",
+             "the hole plate, so the channel was cut ", slot_min_depth,
+             " mm instead — anything less stops inside the plate and opens ",
+             "into nothing. The floor is hole_plate_t (", hole_plate_t,
+             "); below that there is trough all the way down."));
+
+// Deeper than the trough itself and the channel comes out of the bottom of the
+// case, which is the one thing sealing the base is for.
+assert(!slot_on || !seal_bottom || slot_z0 >= base_t,
+       str("pin_slot_depth ", pin_slot_depth, " cuts through the sealed base: ",
+           "the channel reaches ", slot_z0, " but the slab under the troughs ",
+           "starts at ", base_t, ". Lower pin_slot_depth to at most ",
+           floor_t - base_t, ", or raise floor_solid."));
+
+// A wide channel eats outward toward the side wall, the same way a hole does
+assert(!slot_on || row_a_y - slot_cut_w / 2 >= wall,
+       str("The pin channel cuts into the side wall: row centre ", row_a_y,
+           " with a ", slot_cut_w, " mm channel reaches ",
+           row_a_y - slot_cut_w / 2, " but the wall ends at ", wall,
+           ". Raise side_margin or narrow pin_slot_w."));
+
+// With floor_relief on, the plinth is all that carries the channel's two sides.
+// A warning rather than an assert: it still renders and still prints, it just
+// gets fragile, and how fragile depends on a nozzle the model cannot know.
+if (slot_on && relief && (plinth_w - slot_cut_w) / 2 < 0.8)
+    echo(str("WARNING: the ", slot_cut_w, " mm pin channel leaves only ",
+             (plinth_w - slot_cut_w) / 2, " mm of plinth each side of it, ",
+             "which is under two 0.4mm perimeters. The channel walls will be ",
+             "weak. Lower pin_slot_w to ", plinth_w - 1.6,
+             " or less, or raise plinth_wall."));
+
+/* A channel wider than the trough it opens onto is a wide pocket over a
+   narrower slot, and only the slot goes anywhere. Say so with the number,
+   because "4mm channel" sounds like 4mm of clear passage and it is not. It
+   still prints — the shelf either side is the top of solid plinth and faces up,
+   not down, so it adds no overhang.
+
+   The fix is now one thing rather than two. With the ridge gone, the pocket IS
+   the opening at every depth, so widening the trough widens the passage; it
+   used to be that a wider trough was also a taller one and the channel landed
+   at the same point on the slope, so depth had to move as well. */
+if (slot_on && terminal_recess && slot_ledge > 0.15)
+    echo(str("NOTE: the ", slot_cut_w, " mm pin channel opens onto a trough ",
+             "only ", pocket, " mm wide, so the ", slot_ledge,
+             " mm each side is solid floor rather than a way through. The pins ",
+             "sit on the centreline so they pass. Lower pin_slot_w to ",
+             pocket, " to match the pocket",
+             dupont_housing
+               ? str(" — with a plastic surround that is as wide as the trough ",
+                     "goes, since the pitch is what sizes it.")
+               : ", or lower pocket_wall to widen the pocket."));
+
+// pin_slot_depth is the one parameter here that quietly does nothing, so say so
+if (slot_on && !terminal_recess && pin_slot_depth != plate_t)
+    echo(str("NOTE: terminal_recess is off, so there is no trough for the pin ",
+             "channel to reach and pin_slot_depth (", pin_slot_depth,
+             ") is ignored. The channel is cut ", plate_t,
+             " mm, straight through the floor, exactly as the holes were."));
 
 assert(!relief || floor_solid < floor_t - 0.4,
        str("floor_relief has nothing to remove: floor_solid ", floor_solid,
@@ -738,31 +1759,86 @@ assert(closure != "screw" || screw_pilot_d < boss_d - 1.2,
        str("Screw boss wall is too thin: pilot ", screw_pilot_d, " in a ",
            boss_d, " boss. Raise boss_d or lower screw_pilot_d."));
 
-if (wire_channels && slot_neck_end >= slot_reach)
-    echo(str("WARNING: slot_neck (", slot_neck, ") uses up the whole channel, ",
-             "so you get a plain ", slot_w, " mm slot and no wire channel. ",
-             "Lower slot_neck or raise slot_depth."));
-
-if (wire_channels && slot_reach > slot_neck_end && !relief)
+if (wire_channels && !relief)
     echo(str("WARNING: with floor_relief off there is no plinth for the wire ",
              "channel to break out of, so it dead-ends in the floor. The wire ",
              "has to climb out of the top instead, with only pcb_standoff (",
              pcb_standoff, " mm) before it fouls the board."));
 
-// the rests are trimmed to fit rather than asserted against, but if there is
-// no room for either of them the board has nothing but the pins holding it
-if (pcb_standoff > 0 && ledge_d > 0 && near_ledge_d == 0 && far_ledge_d == 0)
-    echo(str("WARNING: no room for a PCB rest at either end — the pin holes ",
-             "reach the board's edges. The header pins are carrying the board ",
-             "on their own. Raise board_end_margin to make room."));
+/* What the surround decided, all in one place.
+
+   Two parameters stop reaching geometry the moment this is ticked, and a
+   setting that produces no visible change is indistinguishable from a broken
+   one. So the tick has to say what it took over, with the numbers — not leave
+   it to be deduced from a render that looks the same either way.
+
+   It is worth saying what it did NOT take over too. wire_channels reads as a
+   casualty of a surround and is not one, so the note names it explicitly. */
+if (dupont_housing)
+    echo(str("NOTE: dupont_housing is on, so the openings are sized for the ",
+             "plastic surround, not the post: ", housing, " mm of surround (the ",
+             pitch, " pitch, less 0.04 of moulding gap) plus hole_clearance ",
+             hole_clearance, " = ", hole, " mm, against a post of ", post,
+             " mm. That is ", hole - pitch >= 0 ? "wider than" : "within",
+             " the pitch, so the row is ONE continuous ", slot_cut_w,
+             " mm channel over one continuous ", pocket,
+             " mm trough per row. Ignored as a result: pocket_wall (",
+             pocket_wall, ", held at 0) and pin_slot (", pin_slot,
+             ", held on). pin_slot_w is honoured above ", hole,
+             " and clamped up to it below. wire_channels is NOT affected — it ",
+             "is ", wire_channels ? "on" : "off", ", and a channel is sized to ",
+             "the PIN (", channel_w, " mm, leaving ", pitch - channel_w,
+             " mm of rib", wire_channel_w > 0 ? ", from wire_channel_w" : "",
+             "), because what goes along it is a wire off a pin, not ",
+             "the connector. Forcing pin_slot on also means the board follows ",
+             "the usual rule for a channel wider than the header's strip: it ",
+             board_drop > 0 ? str("DROPS ", board_drop, " mm, so it sits ")
+                            : str("does not drop, so it sits "),
+             board_under, " mm above the floor with the lid ",
+             snap(cavity - board_top),
+             " mm over it. The surrounds do not hold it up — they are pushed ",
+             "up from below and held by friction on the pin, not standing on ",
+             "anything."));
+
+/* There is deliberately NO warning that terminal_len is too shallow for a
+   housed connector.
+
+   It used to warn below 12, on the assumption that you want the whole housing
+   buried. You often do not: terminal_len is the trough's DEPTH, so it is the
+   control for how much of the connector sits inside the case and how much shows
+   below it, and leaving some proud is a legitimate thing to want — it is easier
+   to grip and unplug, and it costs no case height. A model that calls that a
+   mistake is telling you off for using the setting.
+
+   Nothing is lost by dropping it. The trough depth is stated in the parameter's
+   own comment, the console prints the case height it produced, and how long
+   your housings are is a measurement only you have — so the model was guessing
+   at 15mm to generate a number it had no way to know. */
 
 echo(str("Case ", length, " x ", width, " x ", wall_h + lid_t,
          " mm  |  header ", pin_count, " x2 @ ", pitch,
+         dupont_housing ? str(" (", housing, " mm plastic surround)") : "",
+         slot_on ? str("  |  ", slot_cut_w, " x ", slot_cut_d,
+                        " mm pin channel",
+                        slot_cut_w > hole ? " (clearance, not a fit)" : "")
+                  : str("  |  ", hole, " mm holes, ", pitch - hole,
+                        " mm of plate between them"),
+         wire_channels ? (channels_merged
+                            ? str("  |  wire channels MERGED into one ",
+                                  channel_w, " mm slot per row")
+                            : str("  |  ", channel_w, " mm wire channels, ",
+                                  pitch - channel_w, " mm rib",
+                                  wire_channel_w > 0 ? " (set)"
+                                                     : " (from the pin)"))
+                       : "  |  no wire channels",
          "  |  ", pin_engage, " mm of pin inside the trough",
          seal_bottom ? str("  |  base SEALED, ", base_t, " mm under the troughs")
                      : "",
+         "  |  board gap ", board_gap_side, " mm each side / ",
+         board_gap_end, " mm at the far end",
+         "  |  USB ", usb_type, " ", usb_ow, " x ", usb_oh,
+         " at ", usb_z, " above the floor",
          "  |  antenna bay ", antenna_gap, " mm",
-         "  |  rests ", near_ledge_d, "/", far_ledge_d, " x ", pad_w,
          vents ? str("  |  vents from ", vent_file) : "  |  no vents"));
 
 if (label != "" && (label_x_est > inner_l || label_y_est > inner_w))
@@ -786,6 +1862,29 @@ if (seal_bottom && terminal_recess && pin_engage > terminal_len)
              " mm deep, so they will bottom out and lift the board ",
              pin_engage - terminal_len, " mm. Raise terminal_len, or trim ",
              "the pins and lower pin_length."));
+
+/* Below zero the pin never even leaves the plate, so there is nothing in the
+   pocket for a terminal to find and the recess cannot do its job at all. That
+   is not a warning, it is the wrong hardware for this option — and it rendered
+   a perfectly good case while reporting "-0.2 mm of pin", which is not a length
+   anything can have. */
+assert(!terminal_recess || pin_engage > 0,
+       str("Pins are too short for the terminal recess: ", pin_length,
+           " mm of pin, but ", pin_free, " mm is spent crossing the standoff (",
+           board_under, ") and the plate (", plate_t,
+           "), leaving ", pin_engage, ". Use longer pins, lower pcb_standoff, ",
+           "or set terminal_recess = false and let the connectors sit below ",
+           "the case."));
+
+// nothing stops a long tail coming out of an open underside, and the case then
+// rocks on its pins instead of sitting on its floor
+if (!seal_bottom && pin_protrude > 0)
+    echo(str("WARNING: the pins stand ", pin_protrude,
+             " mm proud of the underside of the case, so it will rock on them ",
+             "rather than sit flat. ", pin_length, " mm of pin against ",
+             board_under + floor_t,
+             " mm from the board to the bottom. Trim them, seal the base, or ",
+             "shorten terminal_len."));
 
 if (terminal_recess && !seal_bottom && pin_engage < 2)
     echo(str("WARNING: only ", pin_engage, " mm of pin reaches into the trough. ",
@@ -812,103 +1911,150 @@ module sq_prism(s, h) {
     translate([-s / 2, -s / 2, 0]) cube([s, s, h]);
 }
 
-/* An axis-aligned square frustum, centred on x/y. A 4-sided cylinder turned
-   45 degrees is a square; r = side / sqrt(2) puts the corners in the right place. */
-module sq_frustum(s1, s2, h) {
-    rotate([0, 0, 45])
-        cylinder(h = h, r1 = s1 / sqrt(2), r2 = s2 / sqrt(2), $fn = 4);
-}
-
 /* A closed ring following the case outline, between two insets from the outer
-   face. Both the groove and the tongue come from this, so they cannot drift. */
+   face. The lid's rib is cut from this.
+
+   Each boundary's corner radius is corner_r minus its own inset, which is what
+   makes the ring a CONSTANT width all the way round. The floor under that has
+   to be tiny, because it is the inner boundary that runs out first: clamping it
+   up pulls the inner corner back and leaves a lump of material behind it. At
+   0.3 the rib measured 3.245mm thick at the corners against 1.203 on the
+   straights — nearly three times, and plainly visible as a step rather than the
+   even rib it is meant to be. rounded_box only needs r > 0.
+
+   Past the corner the inner radius would go negative — the rib is thicker than
+   the corner is round — and the floor makes it a near-square corner instead,
+   which is the right limit: the ring simply fills the corner. */
 module outline_ring(a, b, h) {
     translate([a, a, 0]) difference() {
-        rounded_box(length - 2 * a, width - 2 * a, h, max(corner_r - a, 0.3));
+        rounded_box(length - 2 * a, width - 2 * a, h, max(corner_r - a, 0.01));
         translate([b - a, b - a, -0.1])
-            rounded_box(length - 2 * b, width - 2 * b, h + 0.2, max(corner_r - b, 0.3));
+            rounded_box(length - 2 * b, width - 2 * b, h + 0.2,
+                        max(corner_r - b, 0.01));
     }
 }
 
 
 // --- Pin holes ------------------------------------------------------------
 
-/* One clearance hole through a plate `t` thick, with the lead-in funnel on the
-   upper face. The tray, the coupon and the fit template all cut their holes
-   with this, so what the two test prints report is what the case will give.
-
-   `mat` is the thickness of the material the funnel must not break out of,
-   when that differs from the height of the cut — in the tray the cut spans the
-   trough as well, so only the hole plate is really there to be chamfered.
-   Defaults to `t`, which is right for a plate cut straight through. */
-module plate_hole(t, size, mat = 0) {
-    d = min(lead_in, (mat > 0 ? mat : t) / 2);
+/* One clearance hole through a plate `t` thick: a plain square bore, `size`
+   across from top to bottom. The tray, the coupon and the fit template all cut
+   their holes with this, so what the two test prints report is what the case
+   will give — which is the only reason it is still a module now that it is one
+   line of geometry. */
+module plate_hole(t, size) {
     translate([0, 0, -0.1]) sq_prism(size, t + 0.2);
-    if (d > 0)
-        translate([0, 0, t - d])
-            sq_frustum(size, size + 2 * d, d + 0.1);
 }
 
-/* One row of header holes through the hole plate: a square clearance hole, a
-   funnel on the upper side so a descending pin finds it, and the wire channel.
-   The funnel faces up on purpose — it guides the pin, and an upward cone has no
-   overhang when the tray is printed floor-down.
+/* The continuous version of a whole row of plate_hole()s: one channel
+   slot_cut_w wide, running from the first pin's centre to the last, cut through
+   a plate `t` thick starting at z0. Positioned in x by the header itself, so it
+   cannot drift away from where the holes would have been.
 
-   The channel is a keyhole. The neck beside the hole stays narrower than the
-   pin post, so the pin cannot walk out of its hole sideways; past the neck it
-   opens to wire_w and runs out through the plinth's side. A wire coming off a
-   pin therefore leaves at plate level and drops into the relieved floor, rather
-   than climbing over the plinth top — where it would have only pcb_standoff of
-   room before it fouled the board. */
+   Its LENGTH is the header's, not the width's: the channel covers exactly the
+   ground the row of holes covered, from the first hole's outer edge to the
+   last's, however wide pin_slot_w makes it. Widening it must not also lengthen
+   it — past the end pins there is no trough underneath any more, and the
+   channel would bottom out on solid plinth.
+
+   Straight-sided, like the holes it replaces. It had a swept chamfer along its
+   mouth to match their funnels; both went together, so the channel is
+   slot_cut_w across at every depth. */
+module pin_slot_row(cy, z0, t) {
+    x0 = x_first - hole / 2;
+    x1 = x_first + span + hole / 2;
+
+    translate([x0, cy - slot_cut_w / 2, z0 - 0.1])
+        cube([x1 - x0, slot_cut_w, t + 0.2]);
+}
+
+/* One row of header holes through the hole plate: a square clearance hole and
+   its wire channel. The hole is a plain bore — no funnel on the upper side any
+   more — so it is `hole` across at every depth, and nothing about it can differ
+   between the tray, the coupon and the template.
+
+   The channel runs out through the plinth's side at channel_w, which by default
+   is the PIN's own hole — so at the defaults it is the hole continued sideways
+   at the same width, and the rib between two channels is the same rib as
+   between two holes. A wire coming off a pin therefore leaves at plate level
+   and drops into the relieved floor, rather than climbing over the plinth top,
+   where it would have only pcb_standoff of room before it fouled the board.
+
+   It parts company with `hole` in two cases, both deliberate: dupont_housing
+   widens the hole to the plastic surround and the channel does NOT follow, and
+   wire_channel_w sets it outright. Either way it is ONE width, not the neck and
+   the separate wire_w it used to have — that keyhole cost three parameters and
+   made the rib between two channels a different number from the rib between two
+   holes, with no way to see which was binding. */
 module pin_row(cy) {
     dir = cy < width / 2 ? 1 : -1;      // always toward the middle of the box
+
+    // One channel down the row, or one hole per pin. The channel is measured
+    // from the floor's top face rather than from hole_z0: it does not have to
+    // start at the trough's shoulder the way a hole does, only to get low
+    // enough that the trough's roof has opened out to the channel's own width.
+    if (slot_on)
+        pin_slot_row(cy, slot_z0, floor_t - slot_z0);
+
     for (i = [0 : pin_count - 1]) {
         cx = x_first + i * pitch;
         translate([cx, cy, hole_z0]) {
-            plate_hole(hole_h, hole, plate_t);
+            if (!slot_on) plate_hole(hole_h, hole);
 
-            if (wire_channels && slot_reach > 0) {
-                neck = min(slot_neck_end, slot_reach);
-                translate([-neck_w / 2, dir > 0 ? 0 : -neck, -0.1])
-                    cube([neck_w, neck, hole_h + 0.2]);
-
-                if (slot_reach > slot_neck_end)
-                    translate([-wire_w / 2,
-                               dir > 0 ? slot_neck_end : -slot_reach,
-                               -0.1 - channel_drop])
-                        cube([wire_w, slot_reach - slot_neck_end,
-                              hole_h + 0.2 + channel_drop]);
-            }
+            if (wire_channels && !channels_merged)
+                translate([-channel_w / 2,
+                           dir > 0 ? 0 : -slot_reach,
+                           -0.1 - channel_drop])
+                    cube([channel_w, slot_reach, hole_h + 0.2 + channel_drop]);
         }
     }
+
+    /* Merged, the channels are ONE cut spanning the row rather than a row of
+       cubes meeting face to face. Same extent either way — the union of the
+       cubes runs x_first - channel_w/2 to x_first + span + channel_w/2 the
+       moment channel_w reaches the pitch — but touching cubes are the butting
+       case that makes non-manifold edges and a negative genus, which is the
+       trap the pockets already fell into once. */
+    if (wire_channels && channels_merged)
+        translate([x_first - channel_w / 2,
+                   cy + (dir > 0 ? 0 : -slot_reach),
+                   hole_z0 - 0.1 - channel_drop])
+            cube([span + channel_w, slot_reach,
+                  hole_h + 0.2 + channel_drop]);
 }
 
 /* A trough under each pin row, open at the underside of the case. The Dupont
    connectors push up into it so they finish flush with the floor rather than
    hanging below, and the wires leave straight down out of the open bottom.
 
-   Two narrow troughs rather than one big recessed floor: each only has to
-   bridge `trough_w` when printed, where a full-width recess would leave the
-   whole floor hanging in the air and need support. */
+   Square: straight sides all the way from the underside to the hole plate, so a
+   connector can rise the full terminal_len and grip everything the pin has to
+   offer. The ceiling it leaves is a bridge `pocket` across, anchored on both
+   trough walls — the slicer spans the short way, and at 3mm that needs no
+   support. It is two narrow troughs rather than one full-width recess for that
+   reason: 3mm bridges, a 28mm floor would not.
+
+   Open at the bottom normally, so the connectors go in and the wires come out.
+   Sealed, the cut stops at base_t and the slab below closes it into a blind
+   pocket — the floor of that pocket faces up, so it still prints unsupported. */
 module terminal_troughs() {
-    if (terminal_recess) {
-        // straight sides for the connector, then a peaked roof so nothing
-        // inside the slot is ever an unsupported span
-        profile = [[0, 0],
-                   [trough_w, 0],
-                   [trough_w, terminal_len],
-                   [trough_w / 2, terminal_len + trough_roof_h],
-                   [0, terminal_len]];
-        // Open at the bottom normally, so the connectors go in and the wires
-        // come out. Sealed, the cut stops at base_t and the slab below closes
-        // it into a blind pocket — the floor of that pocket faces up, so it
-        // still prints without support.
+    z0 = seal_bottom ? base_t : -0.1;
+    h  = plate_z - z0;
+
+    if (terminal_recess)
         for (cy = [row_a_y, row_b_y])
-            translate([x_first - hole / 2 - trough_end_margin,
-                       cy - trough_w / 2, seal_bottom ? base_t : -0.1])
-                rotate([90, 0, 90])
-                    linear_extrude(height = span + hole + 2 * trough_end_margin)
-                        polygon(profile);
-    }
+            /* Merged, this is ONE cut rather than a row of cubes meeting face
+               to face. Same extent either way — see pockets_merged — but a row
+               of exactly-touching cubes is the butting case that makes
+               non-manifold edges and a negative genus. */
+            if (pockets_merged)
+                translate([trough_x0, cy - pocket / 2, z0])
+                    cube([trough_x1 - trough_x0, pocket, h]);
+            else
+                for (i = [0 : pin_count - 1])
+                    translate([x_first + i * pitch - pocket / 2,
+                               cy - pocket / 2, z0])
+                        cube([pocket, pocket, h]);
 }
 
 /* The floor only has to be floor_t thick where a trough runs through it.
@@ -925,15 +2071,9 @@ module floor_relief_cut() {
             translate([wall, wall, floor_solid])
                 rounded_box(inner_l, inner_w, floor_t - floor_solid + 0.1, inner_r);
 
-            // Deliberately taller than the cut it is subtracted from. If the
-            // pillar's top lands exactly on the cut's top the two faces are
-            // coplanar, and at some floor_solid values that leaves the pad
-            // hanging 0.1mm over the void — a flat overhang that only shows up
-            // at particular numbers. Overshooting past the cut cannot leave a
-            // stub, because nothing is being cut up there to begin with.
-            if (pcb_standoff > 0 && ledge_d > 0)
-                rest_pads(floor_solid - 0.1, floor_t - floor_solid + 0.4);
-
+            // The rest pads used to be spared here too, each on its own
+            // pillar so it was not left standing on air. With the pads gone
+            // the plinths and the screw bosses are all that need solid ground.
             for (cy = [row_a_y, row_b_y])
                 translate([plinth_x0, cy - plinth_w / 2, floor_solid - 0.1])
                     cube([plinth_x1 - plinth_x0, plinth_w, floor_t]);
@@ -949,32 +2089,63 @@ module floor_relief_cut() {
 
 // --- Tray -----------------------------------------------------------------
 
+/* The opening's outline, drawn centred in 2D and swept through the wall.
+
+   Connector shells are not rectangles, and on a flush mount that shows: the
+   whole point is the socket meeting the wall, so every corner the real shell
+   curves away from is a gap a rectangle leaves behind.
+
+       USB-C     an obround — a rectangle capped with semicircles, radius
+                 exactly half the height, which is what the spec draws
+       micro     a trapezoid, wider at the top. That taper is the thing that
+       / mini    stops a micro plug going in upside down, so it is the most
+                 recognisable part of the outline to get right
+       USB-A     genuinely a rectangle, so it stays one
+
+   The taper is approximate — a shell's exact draft varies by manufacturer far
+   more than its overall size does. Bounding size is what the asserts and the
+   cavity height use, and that is unchanged. */
+module usb_profile(w, h) {
+    taper = usb_type == "micro" ? 0.9 : usb_type == "mini" ? 1.2 : 0;
+
+    if (usb_type == "c") {
+        r = h / 2;
+        hull()
+            for (dx = [-1, 1])
+                translate([dx * (w / 2 - r), 0]) circle(r = r);
+    } else if (taper > 0) {
+        bw = w - taper;                       // narrower at the bottom
+        polygon([[-bw / 2, -h / 2], [bw / 2, -h / 2],
+                 [ w / 2,   h / 2], [-w / 2,  h / 2]]);
+    } else {
+        square([w, h], center = true);
+    }
+}
+
 module openings() {
-    if (usb_opening)
-        translate([-0.1, (width - usb_w) / 2, floor_t + opening_z])
-            cube([wall + 0.2, usb_w, usb_h]);
+    if (usb_opening) {
+        translate([-0.1, width / 2, floor_t + usb_z + usb_oh / 2])
+            rotate([90, 0, 90])
+                linear_extrude(wall + 0.2)
+                    usb_profile(usb_ow, usb_oh);
+
+        /* The slot the overhanging nose slides down, from the opening's widest
+           point clear up through the wall's top edge.
+
+           Dropped 0.1 so it OVERLAPS the profile rather than butting onto it.
+           Landing its base exactly on the profile's top, at exactly the same
+           width, makes two coincident faces and the union comes back with
+           non-manifold edges along the seam — 8 of them, where the rest of the
+           tray has none. The step this leaves in the taper is under 0.05mm. */
+        if (usb_notch && usb_wall_above > 0)
+            translate([-0.1, (width - usb_ow) / 2,
+                       floor_t + usb_notch_z - 0.1])
+                cube([wall + 0.2, usb_ow,
+                      wall_h - floor_t - usb_notch_z + 0.2]);
+    }
     if (end_opening)
         translate([length - wall - 0.1, (width - end_w) / 2, floor_t + opening_z])
             cube([wall + 0.2, end_w, end_h]);
-}
-
-/* Where the board rests: two pads at each end, in the board's own corners.
-   The header pins carry and locate the board, so the pads only have to stop it
-   rocking — a bar across the full width would be plastic for nothing, and with
-   the board flush against the USB wall there is no room for one there anyway.
-
-   Called twice with different z: once to build the pads, and once by the floor
-   relief to keep solid ground under them, so the two cannot disagree. */
-module rest_pads(z0, h) {
-    for (px = [[pcb_x, near_ledge_d], [pcb_x + pcb_l - far_ledge_d, far_ledge_d]])
-        if (px[1] > 0)
-            for (py = [pcb_y, pcb_y + pcb_w - pad_w])
-                translate([px[0], py, z0]) cube([px[1], pad_w, h]);
-}
-
-module pcb_ledges() {
-    if (pcb_standoff > 0 && ledge_d > 0)
-        rest_pads(floor_t, pcb_standoff);
 }
 
 module screw_bosses() {
@@ -993,14 +2164,9 @@ module tray() {
                 translate([wall, wall, floor_t])
                     rounded_box(inner_l, inner_w, cavity + 0.1, inner_r);
 
-                // groove for the lid tongue
-                translate([0, 0, groove_z])
-                    outline_ring(groove_a, groove_b, groove_depth + 0.1);
-
                 openings();
             }
 
-            pcb_ledges();
             if (closure == "screw") screw_bosses();
         }
 
@@ -1059,10 +2225,37 @@ module lid_assembled() {
         union() {
             translate([0, 0, 0]) rounded_box(length, width, lid_t, corner_r);
             translate([0, 0, -tongue_h])
-                outline_ring(groove_a + joint_clearance,
-                             groove_b - joint_clearance, tongue_h);
+                outline_ring(rib_a, rib_b, tongue_h);
+
+            // fills the USB notch, so the end wall closes up when the lid is on
+            if (usb_notch && usb_tab_h > 0)
+                translate([0, (width - usb_tab_w) / 2, -usb_tab_h])
+                    cube([wall, usb_tab_w, usb_tab_h]);
+
             latch_balls(latch_r, latch_z);
         }
+
+        /* The rib steps around the socket.
+
+           Without this the rib is what sets the case height: it hangs down the
+           inside of the end wall, the socket stands up just inside that wall,
+           and the cavity has to be deep enough that they miss each other. Cut
+           the rib away over the socket's width and the lid comes down 2.6mm,
+           until it is the components holding it up instead.
+
+           Only the rib is cut, not the tab beside it — the tab lives in the
+           wall's thickness at x 0..wall, the rib starts at wall + clearance. */
+        if (usb_opening)
+            translate([rib_a - 0.05, (width - usb_ow) / 2, -tongue_h - 0.1])
+                cube([rib_w + 0.1, usb_ow, tongue_h + 0.1]);
+
+        // and the same at the far end, for whatever goes through there — without
+        // it the end opening has to finish below the rib, which is exactly the
+        // constraint the notch exists to remove
+        if (end_opening)
+            translate([length - rib_b - 0.05, (width - end_w) / 2,
+                       -tongue_h - 0.1])
+                cube([rib_w + 0.1, end_w, tongue_h + 0.1]);
 
         lid_vents();
 
@@ -1102,34 +2295,136 @@ module lid() {
 
 // --- Fit coupon -----------------------------------------------------------
 
-/* Five holes, one per clearance offset, so a 2-minute print tells you which
-   fit actually grips before you print a whole case. The engraved digit maps
-   to the offsets listed in the README. */
-coupon_offsets = [-0.10, -0.05, 0, 0.05, 0.10];
+/* A short print of the REAL PLATE, at the real thickness, so you can check your
+   own hardware fits before committing to a whole case.
+
+   Everything is cut at the size the model is CURRENTLY SET TO. It is not a
+   clearance sweep — there are no trial sizes and nothing to label, because
+   every hole is the hole the case will give you.
+
+       PIN ROW    ======[][][][][]======   5 holes on the header PITCH,
+                    ^ clearance slot        slot each side
+       DUPONT     [================]       5 on the pitch, which merge
+
+   IT DROPS ONTO YOUR HEADER. The coupon is as long as the pin_count array, the
+   five pin holes sit on the pitch in the middle, and the rest of that row is a
+   clearance slot — so a full 19-pin row goes on with five pins in the five test
+   holes and every other pin passing straight through. The slot is exactly a
+   pin hole wide, which leaves the same pitch - pin_hole rib beside it as between
+   two test holes: one number, one rib.
+
+   THE DUPONT ROW IS A SLOT, and that is correct rather than a compromise. Five
+   surround openings on the pitch is 2.86 on 2.54, so they overlap by 0.32 and
+   run together — exactly as they do in the tray, where dupont_housing merges the
+   row for the same reason. It is CUT as one slot rather than as five touching
+   cubes: cutting them individually at a spacing equal to their own size butts
+   one cut onto the next, which is how this file makes non-manifold edges and a
+   negative genus. Only when the opening is narrower than the pitch do five
+   separate holes appear, and then they are genuinely separate.
+
+   The pin row is sized from pin_hole, NOT from `hole`, so it still reports what
+   a bare PIN meets. Sized from `hole` it would cut 2.86mm openings with the
+   surround on and call that a pin fit, with 1.11mm of air around a 0.64mm pin.
+
+   The dupont row only exists with dupont_housing on, because only then does the
+   tray have a surround-sized opening to reproduce. */
 
 // the coupon reproduces the hole plate, which is what a pin actually passes
 // through, so the fit it reports is the fit the case will give
 coupon_t = plate_t;
 
+// holes per row - a length of header you can actually hold
+coupon_n = 5;
+
+/* How much room the pin either side of the run gets. Real clearance, not a
+   touching fit: a printer moves an edge a tenth either way between elephant's
+   foot, extrusion width and shrinkage, so anything under about 0.3 is a foul
+   waiting to happen. 0.5 places by hand without fighting it. */
+coupon_clear = 0.5;
+
+/* Two numbers to a fixed 2dp, because str() drops trailing zeros and would
+   engrave "1" for a 1.00 hole, next to a "2.86" — which reads as a different
+   kind of number rather than the same measurement. */
+function coupon_2dp(x) =
+    let (v = round(x * 100))
+    str(floor(v / 100), ".", v % 100 < 10 ? "0" : "", v % 100);
+
 module coupon() {
-    n     = len(coupon_offsets);
-    step  = max(hole + 2 * lead_in + 2.5, 7);
-    pad   = 3;
-    cw    = n * step + 2 * pad;
-    cd    = 15;
-    hy    = cd - 5;
+    surr  = dupont_housing;
+    run   = (coupon_n - 1) * pitch;               // centre of first to last
+    rim   = 0.8;                                  // two 0.4mm perimeters
+
+    /* LENGTH IS SET BY THE PINS EITHER SIDE OF THE RUN, not by the rows.
+
+       The point of the thing is to drop it over five of your header's pins, so
+       the pin at each end of the run has to clear the coupon by an amount a
+       printer can actually hold. 0.01mm is not that: elephant's foot and
+       extrusion width move an edge by a tenth either way, so a coupon sized to
+       "just touch" fouls in practice. coupon_clear is real material.
+
+       Sizing it from the dupont row instead is what produced the 0.01mm — five
+       surround openings reach 1.86mm further than five pin holes, and paying
+       for that pushes the ends out over the neighbouring pins. The dupont slot
+       is a SLOT; how far it runs is not sacred, and it gets what is left. */
+    cw    = run + 2 * (pitch - post / 2 - coupon_clear);
+
+    /* The slot takes everything left over, down to a bare two-perimeter rim.
+       That leaves less material at its ends (0.80) than the pin row has (1.22),
+       and that is fine: the dupont row is tested with the coupon OFF the board,
+       held in the hand while connectors are pushed in. It is the PIN row that
+       gets placed over a live header, so it is the pin row's end material and
+       the clearance beside it that have to be right. */
+    sur_l = cw - 2 * rim;
+
+    /* Depth is stacked band by band at the printable floor rather than picked,
+       so the coupon is as small as it can be and still hold together:
+
+           rim | dupont slot | gap | pin holes | gap | label | rim
+
+       Every band is rim or wider. It used to be 12mm deep with 2.07-3.50mm of
+       spare material doing nothing. */
+    lbl_h = 3.0;                                  // legible engraved at 0.4mm
+    sur_y = surr ? rim + hole / 2 : 0;
+    pin_y = (surr ? sur_y + hole / 2 + rim : 0) + pin_hole / 2 + rim;
+    lbl_y = pin_y + pin_hole / 2 + rim + lbl_h / 2;
+    cd    = lbl_y + lbl_h / 2 + rim;
+
+    x0    = cw / 2 - run / 2;                     // first hole of either row
+
+    // the dupont openings run together once they reach the pitch
+    sur_merged = hole >= pitch - 0.001;
 
     difference() {
         rounded_box(cw, cd, coupon_t, 2);
-        for (i = [0 : n - 1]) {
-            cx = pad + step * (i + 0.5);
-            translate([cx, hy, 0])
-                plate_hole(coupon_t, hole + coupon_offsets[i]);
-            translate([cx, 4, coupon_t - 0.5])
-                linear_extrude(0.6)
-                    text(str(i + 1), size = 4, halign = "center",
-                         valign = "center", $fn = 32);
+
+        // five pin holes on the pitch, nothing else — put it over five pins
+        for (i = [0 : coupon_n - 1])
+            translate([x0 + i * pitch, pin_y, 0])
+                plate_hole(coupon_t, pin_hole);
+
+        /* The dupont row. Cut as ONE slot once the openings reach the pitch,
+           never as five touching cubes: cutting them individually at a spacing
+           equal to their own size butts one cut onto the next, which is how
+           this file makes non-manifold edges and a negative genus. */
+        if (surr) {
+            if (sur_merged)
+                translate([(cw - sur_l) / 2, sur_y - hole / 2, -0.1])
+                    cube([sur_l, hole, coupon_t + 0.2]);
+            else
+                for (i = [0 : coupon_n - 1])
+                    translate([x0 + i * pitch, sur_y, 0])
+                        plate_hole(coupon_t, hole);
         }
+
+        /* THE PITCH, because the pitch is what this coupon exists to check.
+           You pick a preset, print this, and push your module's pins through
+           the row — if they go in, the number engraved on it is the number your
+           header actually is. Engraving the hole size instead
+           told you nothing you were trying to find out. */
+        translate([cw / 2, lbl_y, coupon_t - 0.5])
+            linear_extrude(0.6)
+                text(coupon_2dp(pitch), size = lbl_h, halign = "center",
+                     valign = "center", $fn = 32);
     }
 }
 
@@ -1143,8 +2438,9 @@ module coupon() {
    Drop your actual board into it and a short print answers the three things
    that would otherwise only surface once the real tray is done: whether the
    board fits between the walls, whether the header lines up with the holes,
-   and whether the module has its antenna bay. It is a geometry check — the
-   coupon is still the one that tells you how the pins grip. */
+   and whether the module has its antenna bay. It is a geometry check at case
+   scale — the coupon is still the one that tells you how a pin grips, and with
+   a surround whether a housed connector passes. */
 module template() {
     difference() {
         union() {
@@ -1156,12 +2452,9 @@ module template() {
 
                 // notch the rim so you can see the socket line up
                 if (usb_opening)
-                    translate([-0.1, (width - usb_w) / 2, template_t])
-                        cube([wall + 0.2, usb_w, template_rim + 0.1]);
+                    translate([-0.1, (width - usb_ow) / 2, template_t])
+                        cube([wall + 0.2, usb_ow, template_rim + 0.1]);
             }
-
-            if (pcb_standoff > 0 && ledge_d > 0)
-                rest_pads(template_t, pcb_standoff);
 
             // stubs, so you can see whether the bosses crowd the board
             if (closure == "screw")
@@ -1171,10 +2464,17 @@ module template() {
                             cylinder(d = boss_d, h = template_rim);
         }
 
-        // the real holes, in the real places
+        // the real opening, in the real place — a channel if the tray has one,
+        // or the holes if it does not. It has to follow: at the pitch that
+        // makes the channel worth switching on, a template full of separate
+        // holes is exactly as unprintable as the tray would have been.
         for (cy = [row_a_y, row_b_y])
-            for (i = [0 : pin_count - 1])
-                translate([x_first + i * pitch, cy, 0]) plate_hole(template_t, hole);
+            if (slot_on)
+                pin_slot_row(cy, 0, template_t);
+            else
+                for (i = [0 : pin_count - 1])
+                    translate([x_first + i * pitch, cy, 0])
+                        plate_hole(template_t, hole);
 
         // a scored line at the board's far edge — everything past it is bay
         if (antenna_gap > 0)
