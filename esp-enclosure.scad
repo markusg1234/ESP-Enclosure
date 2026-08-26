@@ -388,7 +388,7 @@ board_end_margin = 3.0; // [0:0.1:20]
    There is no board_clearance any more. It measured the board's edge to the
    interior wall, which is the same span as side_margin minus this minus the
    wall — three parameters for two distances, and only ever one of them live:
-   below side_margin 4.6 the board chain set the width and side_margin did
+   below side_margin 3.6 the board chain set the width and side_margin did
    nothing, above it the reverse. side_margin survived because it is the
    distance the troughs and pin holes are actually checked against, and because
    it leaves the default case the size it has always been. The gap the board
@@ -396,7 +396,7 @@ board_end_margin = 3.0; // [0:0.1:20]
    about if it gets too tight to drop a board into.
    */
 // Pin row centre to the board's long edge. Sets the auto PCB width. (mm)
-board_side_margin = 3; // [0:0.1:20]
+board_side_margin = 2; // [0:0.1:20]
 
 /* THE HEADER SPACER'S HEIGHT — a measurement of your hardware, like strip_w or
    board_t. Not a lever: you are not setting how high the board rides, you are
@@ -545,9 +545,9 @@ antenna_gap = 6.0;      // [0:0.1:30]
 
    IT IS ONE OF TWO DEMANDS ON THE WIDTH, AND THE SMALLER ONE DOES NOTHING.
    The board needs pcb_w + 2 x wall, and the width is whichever asks for more.
-   At the defaults they cross at side_margin 4.6: below that the BOARD sets the
-   width and moving this changes nothing whatever — 3.0 and 4.5 both give a
-   32.06 case — and above it this sets the width 1:1. Raising wall or
+   At the defaults they cross at side_margin 3.6: below that the BOARD sets the
+   width and moving this changes nothing whatever — 3.0 and 3.5 both give a
+   30.06 case — and above it this sets the width 1:1. Raising wall or
    board_side_margin raises the board's demand and moves that crossover up.
 
    So if it looks dead, it is losing the max(), not broken. The console prints
@@ -1406,10 +1406,10 @@ relief = terminal_recess && floor_relief;
    what plinth_wall asks for. The second is REACHING THE SIDE WALL: a plinth
    that stops short of the wall leaves a trench between the two, and at the
    defaults that trench is 1.65 mm across and 7 mm deep — four extrusions wide,
-   deeper than it is wide, and the board's own edge (y 2.8, against a plinth
-   face at 3.25) was hanging over it with nothing underneath. Closing it lands
-   the board's long edge on solid floor and takes a slot out of the print that
-   was never worth having.
+   deeper than it is wide, and on a wide board it is where the board's own edge
+   lands: at board_side_margin 3 that edge sits at y 2.8, outboard of a plinth
+   face at 3.25 and hanging over nothing. Closing it puts solid floor under the
+   whole board and takes a slot out of the print that was never worth having.
 
    Reaching the wall is a demand on the OUTBOARD side only, so the plinth grows
    inboard by the same amount to stay centred on its row: the trough stays in

@@ -132,7 +132,7 @@ over. The model works this out and prints it to the console:
 ECHO: "Case 60.92 x 34.46 x 15.1 mm | header 19 x2 @ 2.54 (2.5 mm plastic
 surround) | 3 x 3 mm pin channel (clearance, not a fit) | 1.2 mm wire
 channels, 1.34 mm rib (set) | 8 mm of pin inside the trough | board
-gap 1.2 mm each side / 6 mm at the far end | USB micro 8.1 x 3.1 at 1.3 above
+gap 2.2 mm each side / 6 mm at the far end | USB micro 8.1 x 3.1 at 1.3 above
 the floor | antenna bay 6 mm | vents from slots.svg"
 ```
 
@@ -157,7 +157,8 @@ parameter](#every-parameter), generated from the `.scad`.
 
 > **There is no `board_clearance`.** It measured the same span as `side_margin`
 > minus `board_side_margin` minus `wall` — three parameters for two distances,
-> and only ever one of them live. `side_margin` survived because it is what the
+> and only ever one of them live: below `side_margin` 3.6 the board chain sets
+> the width, above it the reverse. `side_margin` survived because it is what the
 > troughs and pin holes are checked against.
 
 The gap between board and wall is now **derived, not requested**. You place the
@@ -166,7 +167,7 @@ gap is what is left over:
 
 ```
 gap each side = side_margin - board_side_margin - wall
-              = 5.8 - 3 - 1.6 = 1.2 at the defaults
+              = 5.8 - 2 - 1.6 = 2.2 at the defaults
 ```
 
 The console prints it, and warns below 0.2 mm — half an extrusion width, under
@@ -524,10 +525,11 @@ plinth_w = 2 * max(pocket / 2 + plinth_wall,     the trough plus its walls
 
 The second is what binds at the defaults. Left at the trough's own width the
 plinth stops 1.65 mm short of the side wall, and that gap is not relief worth
-having: **1.65 mm across and 7.0 mm deep**, four extrusions wide, with the
-**board's own long edge at y 2.8, out over it** and no rest pads to carry it. So
-the plinth runs out to the wall, growing inboard by the same amount to stay
-centred on the trough it carries.
+having: **1.65 mm across and 7.0 mm deep**, four extrusions wide. On a wide board
+it is also where the **board's own edge** lands — at `board_side_margin` 3 that
+edge sits at y 2.8, outboard of a plinth face at 3.25, with no rest pads to carry
+it. So the plinth runs out to the wall, growing inboard by the same amount to
+stay centred on the trough it carries.
 
 The relief then comes out as **one bay down the middle**, not three regions.
 Measured across the width at `z = 5`:
@@ -738,16 +740,17 @@ used to come from the header alone, so growing the board past the case was an
 error rather than a bigger case.
 
 **It is also what makes `side_margin` look broken when it is not.** The two terms
-cross at `side_margin` **4.6** with the defaults, and below that the board sets
+cross at `side_margin` **3.6** with the defaults, and below that the board sets
 the width and moving `side_margin` changes nothing:
 
-| `side_margin` | Case width | What set it |
-| --- | --- | --- |
-| 3.0 | 32.06 | the board — `side_margin` is doing nothing |
-| 4.5 | 32.06 | the board — still nothing |
-| 4.6 | 32.06 | they tie |
-| 5.0 | 32.86 | `side_margin`, 1:1 from here up |
-| 5.8 (default) | 34.46 | `side_margin` |
+| `side_margin` | Case width | Gap each side | What set it |
+| --- | --- | --- | --- |
+| 3.0 | 30.06 | 0 | the board — `side_margin` is doing nothing |
+| 3.5 | 30.06 | 0 | the board — still nothing |
+| 3.6 | 30.06 | 0 | they tie |
+| 4.0 | 30.86 | 0.4 | `side_margin`, 1:1 from here up |
+| 5.0 | 32.86 | 1.4 | `side_margin` |
+| 5.8 (default) | 34.46 | 2.2 | `side_margin` |
 
 So if it appears dead, it is losing the `max`, not failing. Raising `wall` or
 `board_side_margin` raises the board's demand and moves that crossover up. The
@@ -894,7 +897,7 @@ channel a drop when a 3 mm spacer bridges it.
 
 The drop is capped at `pcb_standoff`, the spacer's *height*, so it is 1.2 mm and
 not the full 3 mm of `pin_slot_depth`. Once the spacer has sunk, the board's underside rests on the plinth tops either
-side of the channel — 28.86 mm of board against a 3 mm slot — so that is as far
+side of the channel — 26.86 mm of board against a 3 mm slot — so that is as far
 as it goes. Raise `pcb_standoff` to your header's real spacer height and the drop
 follows it.
 
@@ -1118,7 +1121,7 @@ them cannot be built, the model stops with a message naming the fix.
 | `board_l` | `0` | 0 – 200 | PCB length. 0 = derive from the header. (mm) |
 | `board_w` | `0` | 0 – 200 | PCB width. 0 = derive from the header. (mm) |
 | `board_end_margin` | `3.0` | 0 – 20 | Added each side of the header to get the auto PCB length (mm) |
-| `board_side_margin` | `3` | 0 – 20 | Pin row centre to the board's long edge. Sets the auto PCB width. (mm) |
+| `board_side_margin` | `2` | 0 – 20 | Pin row centre to the board's long edge. Sets the auto PCB width. (mm) |
 | `pcb_standoff` | `1.2` | 0 – 10 | The header spacer's height: a measurement of your header, not a lever. (mm) |
 | `strip_w` | `3.0` | 0.5 – 12 | The header spacer's width across the row. MEASURE YOURS. (mm) |
 | `pin_length` | `9.0` | 1 – 20 | Measured off the PCB: its underside down to the pin tip, spacer included. (mm) |
