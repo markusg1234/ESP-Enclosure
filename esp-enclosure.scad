@@ -21,7 +21,7 @@
    the wires leave straight down through the open underside.
 
    NO use<> OR include<> STATEMENTS. The geometry is all in this file, so the
-   tray, the template and the coupon render from it alone.
+   tray and the template render from it alone.
 
    The lid is the exception: its vents are cut from artwork in an SVG beside
    this one, named by vent_file. slots.svg (plain bars) and wifi.svg ship with
@@ -35,20 +35,19 @@
    EVERY DIMENSION IS IN MILLIMETRES. The only settings that are not are the
    handful marked (in degrees), the plain counts, and the on/off switches.
 
-   >> PRINT THE FIT COUPON FIRST. Set part = "coupon". A few minutes and five
-   >> layers, and you push a REAL LENGTH OF HEADER into it — five holes on the
-   >> pitch per clearance step — to find which one actually grips your pins
-   >> before you commit to a whole case. With dupont_housing on it carries a
-   >> second row for the plastic surround as well. The Dupont and board defaults
-   >> below are sensible starting points, not verified specifications for your
-   >> hardware.
+   >> PRINT THE FIT TEMPLATE FIRST. Set part = "template". A shallow shell with
+   >> the same footprint, the same interior outline and the same holes in the
+   >> same places, so you can drop your actual board into it and see that it
+   >> fits, that the header lines up and that the antenna has its bay — before
+   >> committing to a whole case. The Dupont and board defaults below are
+   >> sensible starting points, not verified specifications for your hardware.
    =========================================================================== */
 
 
 /* [Part] */
 
 // Which part to render
-part = "tray";          // [tray:Tray (bottom), lid:Lid (top), template:Fit template - check your board fits, coupon:Fit test coupon - check the hole size, all:Print layout, assembled:Assembly preview]
+part = "tray";          // [tray:Tray (bottom), lid:Lid (top), template:Fit template - check your board fits, all:Print layout, assembled:Assembly preview]
 
 // Gap between parts in the print layout (mm)
 layout_gap = 5;         // [0:0.5:40]
@@ -66,8 +65,19 @@ pin_count = 19;         // [1:60]
 // Centre-to-centre between the two pin rows, across the width. (mm)
 row_spacing = 22.86;    // [5:0.01:60]
 
-// Shift the whole header along the length. (mm)
-pin_x_offset = 0;       // [-20:0.01:20]
+/* Shift the whole header along the length: the holes, the pin channel, the
+   Dupont troughs and the plinths that carry them, all together.
+
+   NEGATIVE IS TOWARD THE USB END. The board itself cannot move — it sits hard
+   against the inside of the USB wall so its socket meets the opening — so this
+   is how you line the holes up with a header that is not centred on your board.
+
+   The default is -1.0 because the header on a typical devkit sits that much
+   closer to the USB edge than dead centre. Measure yours: it is the distance
+   from the board's USB edge to the first pin, against the far edge to the last.
+   */
+// Shift the header along the length. Negative moves it toward the USB end. (mm)
+pin_x_offset = -1.0;    // [-20:0.01:20]
 
 
 /* [Pin pitch / Dupont preset] */
@@ -165,8 +175,7 @@ hole_clearance = 0.2;  // [0:0.01:1.5]
 pin_slot = true;
 
 /* Channel width, and 0 is the default: as wide as a hole, which keeps the pins
-   gripped across the row exactly as separate holes did and leaves the coupon's
-   reading meaningful. It is also the width that keeps the board where it is —
+   gripped across the row exactly as separate holes did. It is also the width that keeps the board where it is —
    see pin_slot, which only drops the board when the channel is wider than the
    header's strip.
 
@@ -174,8 +183,7 @@ pin_slot = true;
    air around it: the channel is then clearance, not a fit, the pins are located
    in neither direction, and the board is held by its rests and the walls alone.
    That is a legitimate thing to want — it makes the pins trivial to drop in and
-   leaves room to bring wires up beside them — but it is a different part, and
-   the coupon no longer tells you anything about it.
+   leaves room to bring wires up beside them — but it is a different part.
 
    Keep it inside the pocket if you want the whole width to be a way through.
    Wider, and the channel is a wide pocket over a narrower opening: it still
@@ -264,6 +272,28 @@ pin_slot_depth = 3.0;   // [0.5:0.1:12]
    */
 // Wire channel width, sized for the wire. 0 is no channel at all. (mm)
 wire_channel_w = 1.2;   // [0:0.01:3]
+
+/* How far the channel carries on BELOW the hole plate, into the trough.
+
+   The channel has to pass through the plate to exist at all — that part is
+   hole_plate_t and not a choice. This is the rest: the drop that opens a mouth
+   into the trough's straight-sided section, so a wire can turn the corner and
+   come out. Stop level with the plate's underside and that mouth is a sliver
+   no wire fits through, which is what a 0 here gives you.
+
+   AT THE CHANNEL'S OWN WIDTH THE MOUTH IS SQUARE, which is where the default
+   sits: one width down for one width across. Shallower trades mouth for plinth,
+   deeper costs nothing but the cut, so the useful direction is down only if you
+   are short of plinth.
+
+   Clamped to the trough's own depth, since past that there is nothing left to
+   open into — and with a sealed base a deeper cut would breach the slab. With
+   terminal_recess off there is no trough at all and this is held at 0: the
+   channel is the plate's thickness and nothing more. The console says when the
+   number you set was not the number you got. (mm)
+   */
+// How far the channel reaches below the hole plate, into the trough. (mm)
+wire_channel_d = 1.2;   // [0:0.05:12]
 
 
 /* [Terminal recess] */
@@ -375,28 +405,23 @@ plinth_wall = 1.2;      // [0.4:0.1:5]
 // PCB length. 0 = derive from the header. (mm)
 board_l = 0;            // [0:0.1:200]
 
-// PCB width. 0 = derive from the header. (mm)
-board_w = 0;            // [0:0.1:200]
+/* YOUR BOARD'S WIDTH, measured across the PCB with calipers — not a lever on
+   the case. It is one of the two demands on the case width; side_margin is the
+   other, and the wider one wins.
+
+   There is no board_side_margin and no board_clearance any more. Both measured
+   the same span from a different end — row centre to the board's edge, and the
+   board's edge to the wall — so three parameters described two distances and
+   only ever one of them was live. What survives is the pair that cannot be
+   confused: this one is your hardware, side_margin is the case. The gap between
+   them is reported by echo() rather than requested, and warned about when it
+   gets too tight to drop a board into. (mm)
+   */
+// Your PCB's width, measured across it. (mm)
+board_w = 25;        // [10:0.1:200]
 
 // Added each side of the header to get the auto PCB length (mm)
 board_end_margin = 3.0; // [0:0.1:20]
-
-/* Row centre to the board's long edge. This is what sets the auto PCB width,
-   which is one of the two demands on the case width — see side_margin, which is
-   the other. (mm)
-
-   There is no board_clearance any more. It measured the board's edge to the
-   interior wall, which is the same span as side_margin minus this minus the
-   wall — three parameters for two distances, and only ever one of them live:
-   below side_margin 3.6 the board chain set the width and side_margin did
-   nothing, above it the reverse. side_margin survived because it is the
-   distance the troughs and pin holes are actually checked against, and because
-   it leaves the default case the size it has always been. The gap the board
-   ends up with is now reported by echo() rather than requested, and warned
-   about if it gets too tight to drop a board into.
-   */
-// Pin row centre to the board's long edge. Sets the auto PCB width. (mm)
-board_side_margin = 2; // [0:0.1:20]
 
 /* THE HEADER SPACER'S HEIGHT — a measurement of your hardware, like strip_w or
    board_t. Not a lever: you are not setting how high the board rides, you are
@@ -531,24 +556,25 @@ width_override = 0;     // [0:0.1:250]
    are. MEASURE YOUR OWN BOARD — this default is a starting point. (mm)
    */
 // Clear air past the board's far edge, for the module's antenna. (mm)
-antenna_gap = 6.0;      // [0:0.1:30]
+antenna_gap = 5;      // [0:0.1:30]
 
-/* Row centre to the outer side face — the case's half-width, measured out from
-   a PIN ROW rather than from the board:
+/* Row centre to the wall's inner face — the room beside the pins, measured out
+   from a PIN ROW rather than from the board:
 
-   width = row_spacing + 2 x side_margin        (22.86 + 11.6 = 34.46)
+   interior = row_spacing + 2 x side_margin     (22.86 + 8.4 = 31.26)
+   width    = interior + 2 x wall               (31.26 + 3.2 = 34.46)
 
-   It is measured to the OUTER face, so it carries the wall rather than sitting
-   inside it. Thicken wall and the case does not grow; the interior shrinks. At
-   5.8 the outside stays 34.46 while the interior goes 31.26 at a 1.6 wall and
-   29.66 at 2.4.
+   IT IS MEASURED TO THE INNER FACE, so it is clearance you can see inside the
+   box and it does not carry the wall. Thicken wall and the case grows outward
+   while the room beside the pins stays exactly where you put it: at 5.8 the
+   interior is 31.26 whether the wall is 1.6 or 2.4, and the outside goes 34.46
+   to 36.06.
 
    IT IS ONE OF TWO DEMANDS ON THE WIDTH, AND THE SMALLER ONE DOES NOTHING.
-   The board needs pcb_w + 2 x wall, and the width is whichever asks for more.
-   At the defaults they cross at side_margin 3.6: below that the BOARD sets the
-   width and moving this changes nothing whatever — 3.0 and 3.5 both give a
-   30.06 case — and above it this sets the width 1:1. Raising wall or
-   board_side_margin raises the board's demand and moves that crossover up.
+   The board needs pcb_w of interior, and the interior is whichever asks for
+   more. They cross where side_margin = (pcb_w - row_spacing) / 2: below that the
+   BOARD sets the width and moving this changes nothing whatever, above it this
+   sets the width 1:1. Raising board_w moves that crossover up.
 
    So if it looks dead, it is losing the max(), not broken. The console prints
    the width it settled on and which demand set it.
@@ -556,13 +582,13 @@ antenna_gap = 6.0;      // [0:0.1:30]
    SCREW BOSSES ADD TO THIS INSTEAD OF FITTING INSIDE IT. A corner boss needs
    room across the width that the header does not, so closure = "screw" puts a
    full boss_d on EACH side on top of whatever side_margin asked for. The stock
-   closure is "friction", where that does not apply and the row centre sits at
-   side_margin exactly. Switch to screws and the case goes from 34.46 wide to
-   43.46, and the row centre from 5.8 to side_margin + boss_d = 10.3. Nothing
-   here prevents that — the boss has to go somewhere. (mm)
+   closure is "friction", where that does not apply and the row centre sits
+   side_margin in from the inner face. Switch to screws and the case gains a
+   full boss_d each side. Nothing here prevents that — the boss has to go
+   somewhere. (mm)
    */
-// Pin row centre to the outer side face. One of two demands on the width. (mm)
-side_margin = 5.8;      // [2:0.01:30]
+// Pin row centre to the INNER side face: clearance beside the pins. (mm)
+side_margin = 3;      // [0:0.01:30]
 
 /* Wall thickness. 1.6 is four 0.4mm perimeters, solid, and it is the reach a USB
    plug has to find before it even touches the socket — the socket sits against
@@ -585,7 +611,7 @@ wall = 1.6;             // [1:0.05:6]
 floor_solid = 2.0;      // [0.8:0.1:8]
 
 // Lid plate thickness (mm)
-lid_t = 2.0;            // [0.8:0.1:8]
+lid_t = 1.6;            // [0.8:0.1:8]
 
 /* Interior height above the floor. 0 = derive it, as the standoff plus the
    board plus whatever stands on top of the board, which is as short as the box
@@ -631,7 +657,7 @@ rib_w = 1.2;            // [0.4:0.05:3]
 rib_h = 2.1;            // [0.5:0.1:6]
 
 // Clearance all round the joint. Raise if the lid is tight. (mm)
-joint_clearance = 0.15; // [0:0.01:0.6]
+joint_clearance = 0.2; // [0:0.01:0.6]
 
 // Screw clearance hole in the lid, e.g. 2.2 for M2 (mm)
 screw_d = 2.2;          // [1:0.1:6]
@@ -740,6 +766,23 @@ end_h = 4;              // [1:0.1:40]
 // Height of the far end opening above the floor's top face. (mm)
 opening_z = 0.5;        // [0:0.1:30]
 
+/* Slack in the USB opening, on top of the receptacle's own shell. It is the
+   TOTAL, split either side, so 0.8 is 0.4 per side.
+
+   The presets are nominal shells and real sockets are not: rolled edges, a
+   flared lip, or a shell a tenth over drawing all stop a socket entering an
+   opening cut to the book figure. Raise this and the opening grows around the
+   same outline, so the micro/mini taper is kept — which is what going to
+   usb_type = custom to get a bigger hole costs you.
+
+   It changes the opening only, not the case: the cavity is measured from the
+   shell, so the height does not follow it. Ignored with usb_type = custom,
+   where usb_w and usb_h are the finished opening and the fit is already in
+   whatever you typed. (mm)
+   */
+// Slack in the USB opening, total across the socket's shell. (mm)
+usb_fit = 1;          // [0:0.05:3]
+
 
 /* [Lid] */
 
@@ -780,10 +823,10 @@ vents = true;
    from USB, where the radio module sits on most devkits). (mm)
    */
 // Centre of the vent patch, measured from the board's far edge. (mm)
-vent_from_end = 15;     // [0:0.5:80]
+vent_from_end = 10;     // [0:0.5:80]
 
 // Length of the vent patch, along the case (mm)
-vent_zone_l = 20;       // [2:0.5:80]
+vent_zone_l = 15;       // [2:0.5:80]
 
 /* Width of the vent patch, across the case. Used by the slots, and by
    vent_fit = stretch. With vent_fit = aspect it is not used at all: the
@@ -791,7 +834,7 @@ vent_zone_l = 20;       // [2:0.5:80]
    Millimetres.
    */
 // Width of the vent patch, across the case. (mm)
-vent_zone_w = 20;       // [2:0.5:60]
+vent_zone_w = 15;       // [2:0.5:60]
 
 
 /* [Vent artwork] */
@@ -822,7 +865,7 @@ vent_rotate = 0;        // [-180:5:180]
    >> Printables customizers cannot resolve it and will fail to render the lid.
    */
 // Artwork file for the lid vents. It must sit beside this .scad.
-vent_file = "slots.svg";
+vent_file = "esphome.svg";
 
 /* SVG imports as a true outline. PNG is read as a heightmap and thresholded,
    which leaves the edges stepped by the pixel grid — measured on a disc, a PNG
@@ -856,23 +899,17 @@ template_rim = 3.0;     // [0:0.1:15]
 /* [Quality] */
 
 // Facets per full circle. 100+ for a final render, 30 for a fast preview.
-$fn = 64;               // [12:200]
+$fn = 200;               // [12:200]
 
 
 /* [Hidden] */
 
 
 // --- USB connector lookup --------------------------------------------------
-/* Flush-mount opening: the receptacle's own shell plus a fit. Defined up here
-   because opening_top, the cavity height, the openings themselves and both
-   opening asserts read them, and every one of those is further down the file.
-
-   usb_fit is the total slack, split either side. 0.6 is a bit over one 0.4mm
-   extrusion, which is enough to swallow the elephant's-foot on a wall printed
-   vertically without leaving the socket rattling. It is not a customizer knob
-   because Custom already lets you state the finished opening outright. */
-usb_fit = 0.6;
-
+/* Flush-mount opening: the receptacle's own shell plus usb_fit, which is set
+   with the other opening parameters. Derived here because opening_top, the
+   cavity height, the openings themselves and both opening asserts read these,
+   and every one of those is further down the file. */
 usb_ow = usb_type == "micro" ? 7.50  + usb_fit
        : usb_type == "c"     ? 8.95  + usb_fit
        : usb_type == "mini"  ? 7.70  + usb_fit
@@ -926,7 +963,7 @@ assert(pin_pitch == 2.54 || pin_pitch == 2.00 || pin_pitch == 1.27,
 
    post_eff is what actually has to pass through the plate. Everything below
    reads `hole`, so putting the choice HERE — in one place, above `hole` — is
-   what keeps the coupon, the template and the tray describing the same opening. */
+   what keeps the template and the tray describing the same opening. */
 housing  = pin_pitch - 0.04;
 post_eff = dupont_housing ? housing : post;
 
@@ -935,8 +972,8 @@ hole  = post_eff + hole_clearance;
 /* What a BARE PIN needs, whatever the surround is doing. Two things want this
    number and both want it for the same reason, so it is named once rather than
    spelled out twice: the wire channel (a wire comes off a pin, not off a
-   housing) and the fit coupon's pin row (which has to keep answering "does my
-   pin grip" even with the surround on, or it is measuring the wrong thing).
+   housing) and the fit template's pin row, which has to keep answering "do my
+   pins line up" even with the surround on, or it is measuring the wrong thing.
 
    With dupont_housing off this IS `hole`. With it on they part company — 0.84
    against 2.70 at the 2.54 preset — which is exactly why it needs its own name. */
@@ -1158,19 +1195,18 @@ hole_h    = plate_t;
 /* The holes have no lead-in chamfer, which takes a whole class of error out of
    the model along with the feature. A funnel is cut from the top down, so it had
    to be capped at half the plate or it broke out of the underside and the hole's
-   narrowest point stopped being `hole` at all — and the coupon, being the plate
-   at its thinnest, failed that first, which is exactly backwards for the part
-   whose job is reporting the fit the case will give. There was a lead_angle
-   before that, defaulting to 65 degrees, which cut 1.07mm into a 1.00mm coupon
-   and reported holes 0.1mm oversize. A plain bore cannot do any of that: it is
+   narrowest point stopped being `hole` at all — worst on the thinnest plate,
+   which is exactly backwards. There was a lead_angle before that, defaulting to
+   65 degrees, which cut 1.07mm into a 1.00mm plate and left holes 0.1mm
+   oversize. A plain bore cannot do any of that: it is
    `hole` wide at the top, at the bottom and everywhere between. */
 
 
 /* The continuous pin channel — how wide, how deep, and how deep it MUST be.
 
    Width is its own parameter because it is a different decision from the hole's.
-   At `hole` the channel is still a fit and the coupon still describes it; wider,
-   it is clearance and the pins float in it. Nothing downstream cares which,
+   At `hole` the channel is still a fit; wider, it is clearance and the pins
+   float in it. Nothing downstream cares which,
    so both are just slot_cut_w.
 
    With the recess on, the depth is measured down from the floor's top face and
@@ -1277,7 +1313,7 @@ span = (pin_count - 1) * pin_pitch;
 screw_pad = closure == "screw" ? boss_d : 0;
 
 pcb_l = board_l > 0 ? board_l : span + 2 * board_end_margin;
-pcb_w = board_w > 0 ? board_w : row_spacing + 2 * board_side_margin;
+pcb_w = board_w;
 
 /* The board sits hard against the inside of the USB end wall, so its socket
    lines up with the opening in that wall. That fixes the USB end, and the far
@@ -1286,24 +1322,37 @@ pcb_w = board_w > 0 ? board_w : row_spacing + 2 * board_side_margin;
 
    The width is the larger of two demands, and that max is the point. It used to
    come from the header alone and never looked at the board at all, so a board
-   grown past the case — by board_w, or by board_side_margin — was an assert
-   rather than a bigger case. Now whichever needs more room wins. At the
+   grown past the case was an assert rather than a bigger case. Now whichever
+   needs more room wins. At the
    defaults the header wins and the case is the size it has always been. */
+/* The least room the row can have beside it, whatever you asked for: the cut
+   that goes through the plate is `row_cut` across and centred on the row, so
+   half of it has to clear the wall or the channel opens into the side of the
+   case. side_margin is CLAMPED UP to that rather than asserted against — a
+   slider whose bottom end errors is a broken slider, and this end of it is
+   reachable the moment you widen pin_slot_w.
+
+   Clamping here rather than at the assert is what lets the slider start at 0:
+   every value on it renders, and the console says when the number you set was
+   not the number you got. */
+row_cut        = slot_on ? slot_cut_w : hole;
+side_margin_min = snap(row_cut / 2);
+side_margin_eff = max(side_margin, side_margin_min);
+
 length = length_override > 0 ? length_override
        : 2 * wall + pcb_l + antenna_gap + usb_inset;
 width  = width_override  > 0 ? width_override
-       : max(row_spacing + 2 * side_margin, pcb_w + 2 * wall) + 2 * screw_pad;
+       : max(row_spacing + 2 * side_margin_eff, pcb_w) + 2 * wall + 2 * screw_pad;
 
 inner_l = length - 2 * wall;
 inner_w = width  - 2 * wall;
 inner_r = max(corner_r - wall, 0.5);
 
 /* The gap the board actually got. It is derived, not requested — you set where
-   the wall goes (side_margin) and where the board's edge is
-   (board_side_margin), and the gap is whatever is left between them. Reported
-   by echo() and checked below, so it is a number you can read rather than one
-   you compute from three parameters. Length is measured at the far end only;
-   the USB end is flush by design. */
+   the wall goes (side_margin) and how wide your board is (board_w), and the gap
+   is whatever is left between them. Reported by echo() and checked below, so it
+   is a number you can read rather than one you compute. Length is measured at
+   the far end only; the USB end is flush by design. */
 /* Both gaps go through snap() because both are differences that can be exactly
    zero. When the board is what sets the size, inner_w is pcb_w with 2 x wall
    added and then taken away again, and the gap comes back as 3.6e-15 rather
@@ -1407,9 +1456,9 @@ relief = terminal_recess && floor_relief;
    that stops short of the wall leaves a trench between the two, and at the
    defaults that trench is 1.65 mm across and 7 mm deep — four extrusions wide,
    deeper than it is wide, and on a wide board it is where the board's own edge
-   lands: at board_side_margin 3 that edge sits at y 2.8, outboard of a plinth
-   face at 3.25 and hanging over nothing. Closing it puts solid floor under the
-   whole board and takes a slot out of the print that was never worth having.
+   lands: at board_w 28.86 that edge sits at y 2.8, outboard of a plinth face at
+   3.25 and hanging over nothing. Closing it puts solid floor under the whole
+   board and takes a slot out of the print that was never worth having.
 
    Reaching the wall is a demand on the OUTBOARD side only, so the plinth grows
    inboard by the same amount to stay centred on its row: the trough stays in
@@ -1444,18 +1493,14 @@ bay_open   = relief_bay >= 1;
    trough void where it crosses the trough's sloping roof. */
 slot_reach = plinth_w / 2 + 0.6;
 
-/* How far the channel reaches BELOW the hole.
+/* How far the channel reaches BELOW the hole, from wire_channel_d.
 
-   Without this the channel would start level with the trough's shoulder, and
-   its mouth into the trough would be a sliver, which no wire fits through.
-   Dropping the channel by its own width opens a mouth that tall into the
-   trough's straight-sided section, so the wire can turn the corner and come
-   out. One width down for one width across — the channel is square in section
-   where it meets the trough.
-
-   Only with the recess on: without a trough there is nothing below the hole to
-   open into, and dropping the cut would just breach the underside of the floor. */
-channel_drop = terminal_recess ? channel_w : 0;
+   Clamped to the trough's own depth: past that there is nothing left to open
+   into, and on a sealed base the cut would go through the slab that closes the
+   underside. Held at 0 with the recess off, where there is no trough below the
+   hole and dropping the cut would only breach the floor. */
+channel_drop_max = terminal_recess ? pocket_d : 0;
+channel_drop     = wire_channels ? min(wire_channel_d, channel_drop_max) : 0;
 
 
 // the same x extent terminal_troughs() covers, so the plinth and the pockets it
@@ -1554,10 +1599,17 @@ assert(x_first - hole / 2 >= wall && x_first + span + hole / 2 <= length - wall,
            wall, " to ", length - wall,
            ". Raise board_end_margin, lower pin_count, or set length_override."));
 
-assert(row_a_y - hole / 2 >= wall,
+/* side_margin_eff already keeps the row's own cut clear of the wall, so this
+   only fires when width_override pins a width too narrow for the header — the
+   one path the clamp cannot reach. The fuzz is there because both sides are
+   sums of the same parts in a different order, and the difference lands a whole
+   ULP short: 3.1 - 1.5 is 1.5999999999999999, which would reject a width that
+   fits exactly. */
+assert(row_a_y - hole / 2 >= wall - fuzz,
        str("Pin holes reach into the side wall: row centre ", row_a_y,
            " with a ", hole, " hole reaches ", row_a_y - hole / 2,
-           " but the wall ends at ", wall, ". Raise side_margin."));
+           " but the wall ends at ", wall,
+           ". Raise width_override or clear it to let the width derive."));
 
 
 /* The hole is the post plus hole_clearance, so it is a clearance hole by
@@ -1574,8 +1626,8 @@ if (hole_clearance < 0.1)
              hole_clearance / 2, " mm each side of a ", post, " mm pin, so the ",
              "hole is barely a clearance hole at all — and once the print ",
              "shrinks it, an interference one. The holes are plain bores with ",
-             "no funnel to guide a pin in. Print part = \"coupon\" and find the ",
-             "clearance that actually grips before committing to a case."));
+             "no funnel to guide a pin in. Raise it before committing to a ",
+             "whole case."));
 
 /* The channels sit one per pin, so anything approaching the pitch merges them
    into a single long slot and takes the plate's inboard support with it.
@@ -1625,6 +1677,28 @@ if (wire_channels && wire_channel_w < channel_min)
              channel_w, " mm. Under 0.4 mm a slot is narrower than one ",
              "extrusion, so it would print as solid plate rather than as a ",
              "channel."));
+
+// The depth clamp, said out loud for the same reason as the width one.
+if (wire_channels && wire_channel_d > channel_drop_max + fuzz)
+    echo(str("NOTE: wire_channel_d ", wire_channel_d, " was cut back to ",
+             channel_drop, " mm — ",
+             terminal_recess
+               ? str("the trough is only ", pocket_d, " mm deep, so there is ",
+                     "nothing below that to open into", seal_bottom
+                       ? " and the sealed base is right underneath it." : ".")
+               : "terminal_recess is off, so there is no trough below the hole at all."));
+
+/* A wire leaves through the mouth this drop opens into the trough, so a drop
+   under one extrusion is a mouth a wire cannot turn the corner into. Warned,
+   not clamped: the channel still prints, and taking the wire down through the
+   hole instead is a legitimate thing to want. */
+if (wire_channels && terminal_recess && channel_drop < channel_min)
+    echo(str("WARNING: the wire channel drops only ", channel_drop,
+             " mm below the plate, so its mouth into the trough is ",
+             channel_drop, " x ", channel_w,
+             " mm — under one 0.4mm extrusion tall, which no wire turns into. ",
+             "Raise wire_channel_d to ", channel_w,
+             " to make that mouth square with the channel."));
 
 /* The band between "printable ribs" and "no ribs at all". It renders and it
    prints; the ribs are just thin. Warned rather than clamped, exactly as
@@ -1756,9 +1830,10 @@ assert(board_gap_end >= 0 && board_gap_side >= 0,
 if (board_gap_side < 0.2)
     echo(str("WARNING: only ", board_gap_side, " mm each side between the ",
              "board and the wall — that is a press fit, not a drop-in. Raise ",
-             "side_margin (currently ", side_margin, ", and the width follows ",
-             "it above ", board_side_margin + wall, ") or lower ",
-             "board_side_margin (currently ", board_side_margin, ")."));
+             "side_margin (currently ", side_margin,
+             ", and the interior follows it above ",
+             snap((pcb_w - row_spacing) / 2),
+             ") or lower board_w (currently ", board_w, ")."));
 
 if (board_gap_end < 0.2)
     echo(str("WARNING: only ", board_gap_end, " mm past the board's far edge, ",
@@ -1874,12 +1949,24 @@ assert(!slot_on || !seal_bottom || slot_z0 >= base_t,
            "starts at ", base_t, ". Lower pin_slot_depth to at most ",
            floor_t - base_t, ", or raise floor_solid."));
 
-// A wide channel eats outward toward the side wall, the same way a hole does
-assert(!slot_on || row_a_y - slot_cut_w / 2 >= wall,
+// Same guard for the channel, and same story: the clamp keeps it clear, so this
+// is the width_override path only.
+assert(!slot_on || row_a_y - slot_cut_w / 2 >= wall - fuzz,
        str("The pin channel cuts into the side wall: row centre ", row_a_y,
            " with a ", slot_cut_w, " mm channel reaches ",
            row_a_y - slot_cut_w / 2, " but the wall ends at ", wall,
-           ". Raise side_margin or narrow pin_slot_w."));
+           ". Raise width_override, or narrow pin_slot_w."));
+
+/* The clamp is not silent: a number you set that is not the number you got has
+   to say so, or the slider looks like it did nothing. */
+if (side_margin < side_margin_min - fuzz)
+    echo(str("NOTE: side_margin ", side_margin, " was raised to ",
+             side_margin_eff, " mm. The ", row_cut, " mm ",
+             slot_on ? "pin channel" : "pin hole",
+             " is centred on the row, so half of it — ", side_margin_min,
+             " mm — has to clear the wall or it opens into the side of the ",
+             "case. Narrow ", slot_on ? "pin_slot_w" : "hole_clearance",
+             " to bring that floor down."));
 
 // With floor_relief on, the plinth is all that carries the channel's two sides.
 // A warning rather than an assert: it still renders and still prints, it just
@@ -2046,7 +2133,8 @@ echo(str("Case ", length, " x ", width, " x ", wall_h + lid_t,
          wire_channels ? (channels_merged
                             ? str("  |  wire channels MERGED into one ",
                                   channel_w, " mm slot per row")
-                            : str("  |  ", channel_w, " mm wire channels, ",
+                            : str("  |  ", channel_w, " x ", channel_drop,
+                                  " mm wire channels, ",
                                   pin_pitch - channel_w, " mm rib",
                                   abs(channel_w - pin_hole) < 0.005
                                     ? " (the pin's own width)" : " (set)"))
@@ -2156,9 +2244,9 @@ module outline_ring(a, b, h) {
 // --- Pin holes ------------------------------------------------------------
 
 /* One clearance hole through a plate `t` thick: a plain square bore, `size`
-   across from top to bottom. The tray, the coupon and the fit template all cut
-   their holes with this, so what the two test prints report is what the case
-   will give — which is the only reason it is still a module now that it is one
+   across from top to bottom. The tray and the fit template both cut their holes
+   with this, so what the template reports is what the case will give — which is
+   the only reason it is still a module now that it is one
    line of geometry. */
 module plate_hole(t, size) {
     translate([0, 0, -0.1]) sq_prism(size, t + 0.2);
@@ -2189,7 +2277,7 @@ module pin_slot_row(cy, z0, t) {
 /* One row of header holes through the hole plate: a square clearance hole and
    its wire channel. The hole is a plain bore — no funnel on the upper side any
    more — so it is `hole` across at every depth, and nothing about it can differ
-   between the tray, the coupon and the template.
+   between the tray and the template.
 
    The channel runs out through the plinth's side at channel_w, which by default
    is the PIN's own hole — so at the defaults it is the hole continued sideways
@@ -2525,141 +2613,6 @@ module lid() {
 }
 
 
-// --- Fit coupon -----------------------------------------------------------
-
-/* A short print of the REAL PLATE, at the real thickness, so you can check your
-   own hardware fits before committing to a whole case.
-
-   Everything is cut at the size the model is CURRENTLY SET TO. It is not a
-   clearance sweep — there are no trial sizes and nothing to label, because
-   every hole is the hole the case will give you.
-
-       PIN ROW    ======[][][][][]======   5 holes on the header PITCH,
-                    ^ clearance slot        slot each side
-       DUPONT     [================]       5 on the pitch, which merge
-
-   IT DROPS ONTO YOUR HEADER. The coupon is as long as the pin_count array, the
-   five pin holes sit on the pitch in the middle, and the rest of that row is a
-   clearance slot — so a full 19-pin row goes on with five pins in the five test
-   holes and every other pin passing straight through. The slot is exactly a
-   pin hole wide, which leaves the same pitch - pin_hole rib beside it as between
-   two test holes: one number, one rib.
-
-   THE DUPONT ROW IS A SLOT, and that is correct rather than a compromise. Five
-   surround openings on the pitch is 2.70 on 2.54, so they overlap by 0.16 and
-   run together — exactly as they do in the tray, where dupont_housing merges the
-   row for the same reason. It is CUT as one slot rather than as five touching
-   cubes: cutting them individually at a spacing equal to their own size butts
-   one cut onto the next, which is how this file makes non-manifold edges and a
-   negative genus. Only when the opening is narrower than the pitch do five
-   separate holes appear, and then they are genuinely separate.
-
-   The pin row is sized from pin_hole, NOT from `hole`, so it still reports what
-   a bare PIN meets. Sized from `hole` it would cut 2.70mm openings with the
-   surround on and call that a pin fit, with 1.03mm of air around a 0.64mm pin.
-
-   The dupont row only exists with dupont_housing on, because only then does the
-   tray have a surround-sized opening to reproduce. */
-
-// the coupon reproduces the hole plate, which is what a pin actually passes
-// through, so the fit it reports is the fit the case will give
-coupon_t = plate_t;
-
-// holes per row - a length of header you can actually hold
-coupon_n = 5;
-
-/* How much room the pin either side of the run gets. Real clearance, not a
-   touching fit: a printer moves an edge a tenth either way between elephant's
-   foot, extrusion width and shrinkage, so anything under about 0.3 is a foul
-   waiting to happen. 0.5 places by hand without fighting it. */
-coupon_clear = 0.5;
-
-/* Two numbers to a fixed 2dp, because str() drops trailing zeros and would
-   engrave "1" for a 1.00 hole, next to a "2.70" — which reads as a different
-   kind of number rather than the same measurement. */
-function coupon_2dp(x) =
-    let (v = round(x * 100))
-    str(floor(v / 100), ".", v % 100 < 10 ? "0" : "", v % 100);
-
-module coupon() {
-    surr  = dupont_housing;
-    run   = (coupon_n - 1) * pin_pitch;               // centre of first to last
-    rim   = 0.8;                                  // two 0.4mm perimeters
-
-    /* LENGTH IS SET BY THE PINS EITHER SIDE OF THE RUN, not by the rows.
-
-       The point of the thing is to drop it over five of your header's pins, so
-       the pin at each end of the run has to clear the coupon by an amount a
-       printer can actually hold. 0.01mm is not that: elephant's foot and
-       extrusion width move an edge by a tenth either way, so a coupon sized to
-       "just touch" fouls in practice. coupon_clear is real material.
-
-       Sizing it from the dupont row instead is what produced the 0.01mm — five
-       surround openings reach 1.86mm further than five pin holes, and paying
-       for that pushes the ends out over the neighbouring pins. The dupont slot
-       is a SLOT; how far it runs is not sacred, and it gets what is left. */
-    cw    = run + 2 * (pin_pitch - post / 2 - coupon_clear);
-
-    /* The slot takes everything left over, down to a bare two-perimeter rim.
-       That leaves less material at its ends (0.80) than the pin row has (1.22),
-       and that is fine: the dupont row is tested with the coupon OFF the board,
-       held in the hand while connectors are pushed in. It is the PIN row that
-       gets placed over a live header, so it is the pin row's end material and
-       the clearance beside it that have to be right. */
-    sur_l = cw - 2 * rim;
-
-    /* Depth is stacked band by band at the printable floor rather than picked,
-       so the coupon is as small as it can be and still hold together:
-
-           rim | dupont slot | gap | pin holes | gap | label | rim
-
-       Every band is rim or wider. It used to be 12mm deep with 2.07-3.50mm of
-       spare material doing nothing. */
-    lbl_h = 3.0;                                  // legible engraved at 0.4mm
-    sur_y = surr ? rim + hole / 2 : 0;
-    pin_y = (surr ? sur_y + hole / 2 + rim : 0) + pin_hole / 2 + rim;
-    lbl_y = pin_y + pin_hole / 2 + rim + lbl_h / 2;
-    cd    = lbl_y + lbl_h / 2 + rim;
-
-    x0    = cw / 2 - run / 2;                     // first hole of either row
-
-    // the dupont openings run together once they reach the pitch
-    sur_merged = hole >= pin_pitch - 0.001;
-
-    difference() {
-        rounded_box(cw, cd, coupon_t, 2);
-
-        // five pin holes on the pitch, nothing else — put it over five pins
-        for (i = [0 : coupon_n - 1])
-            translate([x0 + i * pin_pitch, pin_y, 0])
-                plate_hole(coupon_t, pin_hole);
-
-        /* The dupont row. Cut as ONE slot once the openings reach the pitch,
-           never as five touching cubes: cutting them individually at a spacing
-           equal to their own size butts one cut onto the next, which is how
-           this file makes non-manifold edges and a negative genus. */
-        if (surr) {
-            if (sur_merged)
-                translate([(cw - sur_l) / 2, sur_y - hole / 2, -0.1])
-                    cube([sur_l, hole, coupon_t + 0.2]);
-            else
-                for (i = [0 : coupon_n - 1])
-                    translate([x0 + i * pin_pitch, sur_y, 0])
-                        plate_hole(coupon_t, hole);
-        }
-
-        /* THE PITCH, because the pitch is what this coupon exists to check.
-           You pick a preset, print this, and push your module's pins through
-           the row — if they go in, the number engraved on it is the number your
-           header actually is. Engraving the hole size instead
-           told you nothing you were trying to find out. */
-        translate([cw / 2, lbl_y, coupon_t - 0.5])
-            linear_extrude(0.6)
-                text(coupon_2dp(pin_pitch), size = lbl_h, halign = "center",
-                     valign = "center", $fn = 32);
-    }
-}
-
 
 // --- Fit template ---------------------------------------------------------
 
@@ -2671,8 +2624,8 @@ module coupon() {
    that would otherwise only surface once the real tray is done: whether the
    board fits between the walls, whether the header lines up with the holes,
    and whether the module has its antenna bay. It is a geometry check at case
-   scale — the coupon is still the one that tells you how a pin grips, and with
-   a surround whether a housed connector passes. */
+   scale: it answers whether the parts fit each other, not how tightly a pin
+   grips, which only the real thing will tell you. */
 module template() {
     difference() {
         union() {
@@ -2720,16 +2673,14 @@ module template() {
 
 if (part == "tray")          tray();
 else if (part == "lid")      lid();
-else if (part == "coupon")   coupon();
 else if (part == "template") template();
 else if (part == "all") {
     tray();
     translate([0, width + layout_gap, 0]) lid();
-    translate([0, 2 * (width + layout_gap), 0]) coupon();
 }
 else if (part == "assembled") {
     tray();
     translate([0, 0, wall_h]) lid_assembled();
 }
 else assert(false, str("Unknown part \"", part,
-                       "\". Use tray, lid, template, coupon, all or assembled."));
+                       "\". Use tray, lid, template, all or assembled."));
