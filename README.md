@@ -58,11 +58,12 @@ pin has to clear the standoff *and* the hole plate and still have 2–4mm left
 over. The model works this out and prints it to the console:
 
 ```
-ECHO: "Case 59.92 x 34.46 x 14.7 mm | header 19 x2 @ 2.54 (2.5 mm plastic
+ECHO: "Case 59.92 x 32.06 x 14.7 mm | header 19 x2 @ 2.54 (2.5 mm plastic
 surround) | 3 x 3 mm pin channel (clearance, not a fit) | 1.2 x 1.2 mm wire
 channels, 1.34 mm rib (set) | 8 mm of pin inside the trough | board gap
-3.13 mm each side / 5 mm at the far end | USB micro 8.5 x 3.5 at 1.1 above
-the floor | antenna bay 5 mm | vents from esphome.svg"
+1.93 mm each side / 5 mm at the far end | USB micro 8.5 x 3.5 at 1.1 above
+the floor | antenna bay 5 mm | 4 latches: ends at y 7.39 USB / 9.515 antenna
+| vents from esphome.svg"
 ```
 
 If it warns you, it means the pins are too short:
@@ -967,6 +968,22 @@ into dimples in the wall's inner face — outer, because there is no slot wall o
 the inside to bite any more. The dimple still opens into the cavity, so nothing
 shows outside.
 
+**`latch_location` picks which walls carry them**, and it is the only switch:
+there is no separate on/off, because `none` already says that.
+
+| `latch_location` | What you get |
+| --- | --- |
+| `none` | The press fit on its own. The rib still locates the lid and grips, but nothing holds it down. |
+| `sides` | `latch_count` down each long side — 2 each, so four balls. |
+| `ends` | Two at the USB end and two at the antenna end, none down the sides. **Default**, and also four balls. |
+| `both` | All of them — eight at the defaults. |
+
+`latch_count` only ever answers *how many down each long side*, so it starts at 1
+rather than 0; turning the sides off is `latch_location`'s job, not a second way
+of saying the same thing. It follows that **on a stock case `latch_count` does
+nothing** — the default latches the ends — so move the location to `sides` or
+`both` before reaching for it.
+
 `latch_grip` is the number that has to survive your printer. At 0.35 mm it is
 0.87 of a 0.4 mm extrusion width — comfortably above dimensional noise. Below
 about 0.25 mm it vanishes into tolerance and you get either no click or a
@@ -984,6 +1001,45 @@ perimeters. A warning fires below `wall` 1.25, where that drops under two.
 There is no cantilever-snap option: on a lid that separates vertically a hook's
 retention face is always downward-facing, and steepening it enough to print
 cleanly makes it too weak to hold. A ball detent retains by interference instead.
+
+#### The end latches
+
+The default latches the two ends, and they always come **two per end** — never
+one, never three.
+
+That is forced, not chosen. Each end's rib has an opening notched out of its
+middle — the USB socket at one end, `end_opening` at the other. The balls are
+unioned into the lid *before* that notch is cut, so one sitting in the notch's
+width would come out sliced in half, and a single ball off to one side would cock
+the lid. Two, straddling the opening, is the only arrangement that works.
+
+Where they sit across the width is derived, not set. Each takes the middle of the
+rib run left between the rounded corner and the opening's edge, both limits
+backed off by the tray's dimple radius, because the dimple is the larger of the
+two spheres. Change `usb_type`, `usb_fit` or `end_w` and they move on their own.
+At the defaults, measured off the mesh:
+
+| End | Its opening, `y` | Room for a ball centre | Ball centres, `y` |
+| --- | --- | --- | --- |
+| USB | 11.78 – 20.28 | 3.65 – 11.13 | **7.39** and **24.67** |
+| Antenna | none (`end_opening` off) | 3.65 – 15.38 | **9.52** and **22.55** |
+
+They bite the same as the side latches do — **0.447 mm** into the wall, leaving
+**1.153 mm** behind — because they are the same ball on the same rib face, only
+pointing along the case instead of across it. The console prints where they
+landed.
+
+Wide enough openings leave nothing between the notch and the corner. That end is
+then **dropped rather than shoved somewhere it cannot seat**, and the console
+says which end, what stopped it, and what the case would have to widen to. At
+`corner_r` 12 the USB end goes; at `end_w` 28.8 the antenna end goes. Nothing
+asserts, and the report reads
+
+```
+2 latches: ends at y NONE USB / 14.015 antenna
+```
+
+so a missing pair never looks like a setting that did nothing.
 
 ### Lid
 
@@ -1122,8 +1178,8 @@ them cannot be built, the model stops with a message naming the fix.
 | `screw_d` | 1 – 6 | Screw clearance hole in the lid, e.g. 2.2 for M2 (mm) |
 | `screw_pilot_d` | 0.8 – 5 | Pilot hole in the boss, e.g. 1.6 for an M2 self-tapper (mm) |
 | `boss_d` | 2 – 12 | Screw boss outer diameter (mm) |
-| `latches` | true / false | Ball detents on the lid's rib, clicking into dimples in the wall. |
-| `latch_count` | 0 – 6 | How many down each long side |
+| `latch_location` | 4 choices | Which walls carry the lid's ball latches. |
+| `latch_count` | 1 – 6 | How many down each long side. Ignored unless `latch_location` includes the sides. |
 | `latch_grip` | 0.1 – 1 | How far the ball squeezes past the wall. This has to survive your printer. (mm) |
 | `latch_fit` | 0 – 0.4 | Slack in the dimple so the ball seats. Comes off the lip, so keep it small. (mm) |
 
@@ -1178,21 +1234,35 @@ them cannot be built, the model stops with a message naming the fix.
 
 **No supports needed.** Measured off the exported meshes, not assumed:
 
-| Part | Surface below 45° | below 55° | below 60° |
-| --- | --- | --- | --- |
-| Tray | 38.9 mm² | 39.4 mm² | 40.0 mm² |
-| Lid | 0.71 mm² | 1.14 mm² | 1.65 mm² |
-| Template | 0.00 mm² | 0.00 mm² | 0.00 mm² |
-| Coupon | 0.00 mm² | 0.00 mm² | 0.00 mm² |
+| Part | `latch_location` | Surface below 45° | below 55° | below 60° |
+| --- | --- | --- | --- | --- |
+| Tray | `none` | 0.00 mm² | 0.00 mm² | 0.00 mm² |
+| Tray | `ends` (default) or `sides` | 0.50 mm² | 1.02 mm² | 1.67 mm² |
+| Tray | `both` | 1.01 mm² | 2.04 mm² | 3.34 mm² |
+| Lid | `none` | 0.00 mm² | 0.00 mm² | 0.00 mm² |
+| Lid | `ends` (default) or `sides` | 0.85 mm² | 1.38 mm² | 1.99 mm² |
+| Lid | `both` | 1.71 mm² | 2.75 mm² | 3.98 mm² |
+| Template | — | 0.00 mm² | 0.00 mm² | 0.00 mm² |
 
-The tray's 38.9 mm² is almost all the top edge of the USB opening — a 12 mm bridge
-across the 3.2 mm wall, 38.4 mm², which every FDM printer spans without help. The
-remaining 0.5 mm² is the four latch dimples.
+Downward-facing area within that many degrees of horizontal, with the faces lying
+on the build plate excluded — count those and you are measuring the bed.
 
-The lid's 0.71 mm² is the four latch balls. A half-round bump has a small flat
-patch at its lowest point: against a 45°-chamfered bead of the same size, the
-bead is 0.00 mm² and the ball 0.58 mm² per pair. That is the price of a round
-ball, and it bridges in a couple of layers.
+**At `none` both parts measure a flat zero, so every downward face in the case is
+a latch.** There is nothing else to bridge: the USB opening is slotted clear
+through to the top of the wall for the socket's overhang, so its top edge is open
+air rather than a bridge — the lid's tab fills the slot when the case is shut —
+and the two pin channels run right through the floor, which is what the tray's
+genus of 2 means, one handle per row. No ceiling over them either.
+
+A half-round bump has a small flat patch at its lowest point, and that patch is
+the whole figure. It bridges in a couple of layers.
+
+**`sides` and `ends` measure identically, and `both` is exactly their sum.** That
+is the check that the end latches are the same feature as the side ones rather
+than something new — same ball, same dimple, same flat patch, only pointing along
+the case instead of across it. The volumes say the same thing: each group of four
+takes 1.246 mm³ out of the tray and puts 1.372 mm³ onto the lid, whichever walls
+it is on. None of it needs support.
 
 Otherwise the lid has nothing to bridge. `label` defaults to blank, and the
 engraving is the only overhang on it: set one and you get the ceiling of the
@@ -1202,12 +1272,15 @@ and never overhang, whatever artwork you use.
 
 Three features exist specifically to keep this true:
 
-- **The troughs are square, and their ceilings bridge.** This is the one place the
-  tray has real flat downward area — 255 mm², two strips 3 mm wide running the
-  length of the header. It is a *bridge*, not an overhang: the trough is anchored
-  on both walls, so the slicer spans the 3 mm direction, which needs no support at
-  a 0.4 mm nozzle. It is also why there are two narrow troughs rather than one
-  full-width recess — 3 mm bridges, a 28 mm floor would not.
+- **The troughs are square, and anything they do roof bridges.** On the current
+  defaults they roof nothing at all: the trough is as wide as the pin channel
+  above it, so the two merge into one opening straight through the floor and the
+  measured area is 0.00 mm². Narrow the channel under the trough and a ceiling
+  comes back — two strips 3 mm wide running the length of the header. That is a
+  *bridge*, not an overhang: it is anchored on both walls, so the slicer spans the
+  3 mm direction, which needs no support at a 0.4 mm nozzle. It is also why there
+  are two narrow troughs rather than one full-width recess — 3 mm bridges, a 28 mm
+  floor would not.
 
   A 65° ridge used to roof them to avoid even that. It was never a span, and
   what the ridge actually did was taper the trough to nothing at the plate, so a

@@ -667,14 +667,40 @@ screw_pilot_d = 1.6;    // [0.8:0.05:5]
 // Screw boss outer diameter (mm)
 boss_d = 4.5;           // [2:0.1:12]
 
-/* Ball latches: half-round bumps on the lid's rib that click into dimples in
-   the slot wall, so the lid latches rather than only gripping by friction.
-   */
-// Ball detents on the lid's rib, clicking into dimples in the wall.
-latches = true;
+/* Ball latches: half-round bumps on the lid's rib that click into dimples in the
+   wall, so the lid latches rather than only gripping by friction. This is the
+   one switch for all of them — which walls carry them, and whether there are any
+   at all.
 
-// How many down each long side
-latch_count = 2;        // [0:1:6]
+   THE ENDS are the default — the USB end and the antenna end, always two apiece.
+   Two per end, never one: each end's rib has an opening notched out of its
+   middle, and the balls go into the lid before that notch is cut, so a ball
+   sitting in the notch's width would be sliced in half with it, and a single ball
+   off to one side would cock the lid. Straddling the opening is the only
+   arrangement that works there.
+
+   Where the end pair sits across the width is derived, not set. Each takes the
+   middle of the rib run left between the corner and the opening's edge, so
+   changing usb_type, usb_fit or end_w moves them on its own, and they stay off
+   the rounded corner where the wall's inner face curves away and a dimple would
+   cut in at an angle. Where an opening is wide enough to leave no room at all,
+   that end is skipped and the console says which one and why.
+
+   THE LONG SIDES carry latch_count of them each, spread over the middle half of
+   the length. Four balls either way at the defaults; `both` gives all eight.
+
+   `none` is the friction fit on its own: the rib still drops inside the wall and
+   still grips, but nothing holds the lid down. */
+// Which walls carry the lid's ball latches.
+latch_location = "ends";  // [none:None - friction fit only, sides:Long sides only, ends:Both ends only, both:Sides and ends]
+
+/* How many latches down EACH long side. It starts at 1 because latch_location is
+   what turns them off — a 0 here would be a second way to say the same thing.
+
+   Ignored unless latch_location is sides or both, which the default is not: on a
+   stock case this does nothing until you move the location off the ends. */
+// How many down each long side. Ignored unless latch_location includes the sides.
+latch_count = 2;        // [1:1:6]
 
 /* How far the ball has to squeeze past the slot wall going in. This is the
    grip, and it is the number that has to survive your printer: below about
@@ -1541,6 +1567,57 @@ latch_r = joint_clearance + latch_grip;
 latch_y = rib_a;                           // the rib's outer face
 latch_z = -tongue_h / 2;                   // lid-local, mid-height of the rib
 
+// latch_location, unpacked once so nothing downstream has to spell the strings out
+// again. An unknown value latches nothing, which the assert further down catches
+// before it can look like a working setting.
+latch_on_sides = latch_location == "sides" || latch_location == "both";
+latch_on_ends  = latch_location == "ends"  || latch_location == "both";
+
+/* Where the end latches sit across the width. Plain variables rather than a
+   function, because a function called from a top-level assignment reads whatever
+   has been assigned SO FAR and silently sees undef for the rest — the one bug
+   this file keeps repeating.
+
+   Two limits bracket each ball, and both are measured to the ball's centre:
+
+   - Outward, the rounded corner. The rib ring's outer boundary is straight only
+     between y = corner_r and y = width - corner_r; past that the wall's inner
+     face is curving away and the dimple would bite in at an angle, deeper than
+     latch_grip on one side of it.
+   - Inward, the notch cut out of that end's rib for its opening. The lid unions
+     the balls in and cuts the notch afterwards, so a ball inside that band comes
+     out sliced.
+
+   Both are backed off by the tray's dimple radius, which is the larger of the
+   two spheres, so it is the dimple that has to fit, not just the ball.
+
+   The ball then takes the middle of what is left. Nothing is clamped to an end
+   stop: when the run is too short to hold one, the position comes back -1 and
+   that end is skipped, with a warning below saying so. */
+latch_end_x       = rib_a;                 // the rib's outer face at either end
+latch_end_clear   = latch_r + latch_fit;   // the dimple is the bigger sphere
+latch_run_lo      = corner_r + latch_end_clear;
+
+// half-width of the notch cut out of each end's rib, 0 where there is no opening
+latch_notch_near  = usb_opening ? usb_ow / 2 : 0;
+latch_notch_far   = end_opening ? end_w  / 2 : 0;
+
+latch_run_hi_near = width / 2 - latch_notch_near - latch_end_clear;
+latch_run_hi_far  = width / 2 - latch_notch_far  - latch_end_clear;
+
+// centre of the surviving run, or -1 when that end has no room for a ball
+latch_end_y_near  = latch_run_hi_near >= latch_run_lo
+                  ? (latch_run_lo + latch_run_hi_near) / 2 : -1;
+latch_end_y_far   = latch_run_hi_far  >= latch_run_lo
+                  ? (latch_run_lo + latch_run_hi_far ) / 2 : -1;
+
+// how many latches latch_location actually produces, for the report below — the end
+// pair is dropped where the opening leaves it no rib, so this is not arithmetic
+// on the setting, it is a count of what got made
+latch_total = (latch_on_sides ? 2 * latch_count : 0)
+            + (latch_on_ends  ? (latch_end_y_near > 0 ? 2 : 0)
+                              + (latch_end_y_far  > 0 ? 2 : 0) : 0);
+
 // Artwork is laid down a quarter turn clockwise from how it is drawn, so the
 // shipped wifi.svg lands the right way round; vent_rotate adjusts from there.
 vent_angle = vent_rotate - 90;
@@ -1778,25 +1855,46 @@ assert(!usb_opening || usb_overhang <= wall,
    thin wall is the thing that runs out. The pocket reaches latch_r + latch_fit
    from the rib's outer face, which is joint_clearance proud of the wall, so it
    eats (latch_r + latch_fit - joint_clearance) into it. */
-if (latches && latch_count > 0
+if ((latch_on_sides || latch_on_ends)
     && wall - (latch_r + latch_fit - joint_clearance) < 0.8)
     echo(str("WARNING: the latch dimple leaves only ",
              wall - (latch_r + latch_fit - joint_clearance),
              " mm of wall behind it, under two 0.4mm perimeters — it will show ",
              "through, or blow out. Raise wall above ",
              0.8 + latch_r + latch_fit - joint_clearance,
-             ", lower latch_grip, or switch latches off."));
+             ", lower latch_grip, or set latch_location to none."));
 
 /* The latch ball is a half-round of latch_r, so it stands 2 x latch_r across the
    rib's face. Sink the groove far enough and the ball is most of the rib, with
    nothing left above or below to hold it — the lid still renders and still
    clicks in the preview, it just stops having a seat. */
-if (latches && latch_count > 0 && tongue_h < 4 * latch_r)
+if ((latch_on_sides || latch_on_ends) && tongue_h < 4 * latch_r)
     echo(str("WARNING: the lid rib is only ", tongue_h, " mm tall carrying a ",
              2 * latch_r, " mm latch ball, so there is just ",
              (tongue_h - 2 * latch_r) / 2,
              " mm of rib above and below it. Raise rib_h to ",
              4 * latch_r, " or lower latch_grip."));
+
+/* The end latches have to fit between the rounded corner and the notch cut for
+   that end's opening. A wide enough opening leaves nothing between the two, and
+   the pair is dropped rather than shoved somewhere it cannot seat — but silently
+   dropping them would look exactly like the switch not working, which is the
+   thing this model is not allowed to do. */
+if (latch_on_ends && latch_end_y_near < 0)
+    echo(str("WARNING: no end latches at the USB end. The ", usb_ow,
+             " mm opening and the ", corner_r,
+             " mm corner leave no rib between them — the run would have to reach ",
+             latch_run_lo, " and it stops at ", latch_run_hi_near,
+             ". Narrow the opening, lower corner_r, or widen the case above ",
+             2 * (latch_run_lo + latch_end_clear + latch_notch_near), "."));
+
+if (latch_on_ends && latch_end_y_far < 0)
+    echo(str("WARNING: no end latches at the antenna end. The ", end_w,
+             " mm opening and the ", corner_r,
+             " mm corner leave no rib between them — the run would have to reach ",
+             latch_run_lo, " and it stops at ", latch_run_hi_far,
+             ". Lower end_w, lower corner_r, or widen the case above ",
+             2 * (latch_run_lo + latch_end_clear + latch_notch_far), "."));
 
 assert(rib_h < wall_h - floor_t,
        str("rib_h ", rib_h, " hangs deeper than the cavity itself (",
@@ -1862,6 +1960,13 @@ assert(usb_type == "micro" || usb_type == "c" || usb_type == "mini"
        str("Unknown usb_type \"", usb_type,
            "\". Use micro, c, mini, a or custom. Anything else falls through ",
            "to usb_w / usb_h without telling you."));
+
+// Spelled out for the same reason usb_type is: a typo here would otherwise fall
+// through to latching nothing at all, which looks exactly like a working "none".
+assert(latch_location == "none" || latch_location == "sides"
+       || latch_location == "ends" || latch_location == "both",
+       str("Unknown latch_location \"", latch_location,
+           "\". Use none, sides, ends or both."));
 
 assert(!usb_opening || usb_ow <= inner_w,
        str("The ", usb_type, " USB opening is ", usb_ow,
@@ -2145,6 +2250,21 @@ echo(str("Case ", length, " x ", width, " x ", wall_h + lid_t,
          "  |  USB ", usb_type, " ", usb_ow, " x ", usb_oh,
          " at ", usb_z, " above the floor",
          "  |  antenna bay ", antenna_gap, " mm",
+         // what latch_location actually produced, not what was asked for — the end
+         // pair is dropped where the opening leaves it no rib
+         latch_total == 0 ? "  |  no latches, friction fit only"
+                  : str("  |  ", latch_total, " latches: ",
+                        latch_on_sides ? str(latch_count, " per side") : "",
+                        latch_on_sides && latch_on_ends ? " + " : "",
+                        latch_on_ends
+                          ? str("ends at y ",
+                                latch_end_y_near > 0 ? str(latch_end_y_near)
+                                                     : "NONE",
+                                " USB / ",
+                                latch_end_y_far > 0 ? str(latch_end_y_far)
+                                                    : "NONE",
+                                " antenna")
+                          : ""),
          vents ? str("  |  vents from ", vent_file) : "  |  no vents"));
 
 if (label != "" && (label_x_est > inner_l || label_y_est > inner_w))
@@ -2594,15 +2714,28 @@ module lid_assembled() {
 
 /* Where the latches sit. One list of positions, used by the lid to place the
    balls and by the tray to cut the dimples, so the two cannot drift apart. The
-   tray passes a slightly bigger radius and the assembled height. */
+   tray passes a slightly bigger radius and the assembled height.
+
+   A sphere needs no orientation, so the same call serves both walls: centred on
+   the rib's outer face it is half buried in the rib and half proud of it,
+   whichever way that face happens to point. */
 module latch_balls(r, z0) {
-    if (latches && latch_count > 0)
+    if (latch_on_sides)
         for (i = [0 : latch_count - 1]) {
             lx = latch_count == 1 ? length / 2
                : length * 0.25 + i * (length * 0.5) / (latch_count - 1);
             for (ly = [latch_y, width - latch_y])
                 translate([lx, ly, z0]) sphere(r = r, $fn = 32);
         }
+
+    // and the same again on the two end walls, mirrored either side of the
+    // opening notched out of that end's rib
+    if (latch_on_ends)
+        for (e = [[latch_end_x, latch_end_y_near],
+                  [length - latch_end_x, latch_end_y_far]])
+            if (e[1] > 0)
+                for (ly = [e[1], width - e[1]])
+                    translate([e[0], ly, z0]) sphere(r = r, $fn = 32);
 }
 
 /* Print orientation: rolled over so the plate lies on the bed. */
