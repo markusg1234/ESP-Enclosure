@@ -13,8 +13,7 @@ underside. Past the board's far edge is a clear bay for the onboard antenna.
 **The geometry is one file.** [`esp-enclosure.scad`](esp-enclosure.scad) has no
 `use <>` and no `include <>`, so the tray and the fit template render from it
 alone. The lid is the exception: its vents are cut from artwork
-in an SVG beside it, so that file has to travel with the model — which also
-means the Thingiverse and Printables customizers cannot render the lid. Set
+in an SVG beside it, so that file has to travel with the model. Set
 `vents = false` and everything is standalone again.
 
 ## Quick start
@@ -1036,11 +1035,8 @@ Two things to know if you are drawing your own:
 > `import()` and then **carries on and renders a lid with no vents at all**,
 > reporting `Status: NoError` and exporting a valid STL. OpenSCAD cannot test for
 > a file's existence, so no `assert` can catch it. The console line names the file
-> the lid used; an unvented lid is the symptom.
->
-> This is also why the Thingiverse and Printables customizers cannot render the
-> lid. The tray and template are unaffected, as is the lid with
-> `vents = false`.
+> the lid used; an unvented lid is the symptom. The tray and template are
+> unaffected, as is the lid with `vents = false`.
 
 ## Every parameter
 

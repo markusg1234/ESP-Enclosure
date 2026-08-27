@@ -25,9 +25,8 @@
 
    The lid is the exception: its vents are cut from artwork in an SVG beside
    this one, named by vent_file. slots.svg (plain bars) and wifi.svg ship with
-   it. That file has to travel with the model, and the Thingiverse / Printables
-   web customizers cannot resolve it — they will fail to render the lid. Set
-   vents = false and everything is standalone again.
+   it. That file has to travel with the model. Set vents = false and everything
+   is standalone again.
 
    Open in OpenSCAD, then Window > Customizer. Pick a part with `part` at the
    top, press F6, then File > Export > STL.
@@ -861,8 +860,7 @@ vent_rotate = 0;        // [-180:5:180]
    name it here.
 
    >> THE LID NEEDS THIS FILE. Vents are always cut from artwork now, so the
-   >> model is only standalone with vents = false. The Thingiverse and
-   >> Printables customizers cannot resolve it and will fail to render the lid.
+   >> model is only standalone with vents = false.
    */
 // Artwork file for the lid vents. It must sit beside this .scad.
 vent_file = "esphome.svg";
