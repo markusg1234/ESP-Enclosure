@@ -5,15 +5,31 @@
    Licensed under CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
 
    This model is an original design, written from scratch. It ships with
-   wifi.svg, which is part of it and under the same licence.
+   slots.svg and wifi.svg, which are part of it and under the same licence.
 
-   esphome.svg, if present, is NOT mine and NOT under CC BY 4.0: it is the
-   ESPHome logo from Homarr Labs' dashboard-icons, under Apache 2.0, and
-   modified. See "Third-party assets" in the README. Nothing here renders it
-   unless you point vent_file at it.
+   esphome.svg is NOT mine and NOT under CC BY 4.0: it is the ESPHome logo from
+   Homarr Labs' dashboard-icons, under Apache 2.0, and modified. See
+   "Third-party assets" in the README.
+
+   IT IS WHAT THE LID CUTS BY DEFAULT — vent_file names it — so the attribution
+   travels with anything you publish, print for someone else or sell. Point
+   vent_file at slots.svg or wifi.svg, or set vents = false, and nothing here
+   references it.
 
    The lid drops into a slot around the top of the wall and is held by ball
    latches: half-round bumps on its rib clicking into dimples in the slot wall.
+
+   The devkit's two buttons — EN and BOOT — come up through that lid as a
+   SEPARATE PRINTED PART each: a stem standing proud through a plain hole in the
+   plate, a flange underneath that keeps the button captive, and a tip reaching
+   down to the switch. The flange is the only part wider than the hole, so they
+   are fed in from inside the lid, stem first, before the lid goes on. Print them
+   with part = "button".
+
+   Nothing on them flexes, and that is the whole point. This started as a
+   printed flexure — the cap cut free on three spring arms so the lid stayed one
+   part — and it broke after a few presses. Printed arms that survive one press
+   do not survive a thousand.
 
    The board sits up on ledges; its header pins drop through a thin hole plate
    into a trough under each row. Dupont connectors push up into those troughs
@@ -24,9 +40,10 @@
    tray and the template render from it alone.
 
    The lid is the exception: its vents are cut from artwork in an SVG beside
-   this one, named by vent_file. slots.svg (plain bars) and wifi.svg ship with
-   it. That file has to travel with the model. Set vents = false and everything
-   is standalone again.
+   this one, named by vent_file. Three ship with it — esphome.svg (the ESPHome
+   logo, the default, and the third-party one above), slots.svg (plain bars) and
+   wifi.svg. That file has to travel with the model. Set vents = false and
+   everything is standalone again.
 
    Open in OpenSCAD, then Window > Customizer. Pick a part with `part` at the
    top, press F6, then File > Export > STL.
@@ -46,7 +63,7 @@
 /* [Part] */
 
 // Which part to render
-part = "tray";          // [tray:Tray (bottom), lid:Lid (top), template:Fit template - check your board fits, all:Print layout, assembled:Assembly preview]
+part = "tray";          // [tray:Tray (bottom), lid:Lid (top), button:Buttons - the two loose press buttons, template:Fit template - check your board fits, all:Print layout, assembled:Assembly preview]
 
 // Gap between parts in the print layout (mm)
 layout_gap = 5;         // [0:0.5:40]
@@ -61,7 +78,7 @@ pin_count = 19;         // [1:60]
 /* Centre-to-centre between the two rows, across the width. 22.86 is what most
    ESP devkits use; 25.4 is the other common one. (mm)
    */
-// Centre-to-centre between the two pin rows, across the width. (mm)
+// Centre-to-centre between the two pin rows, across the width. 25.4 is the other common one. (mm)
 row_spacing = 22.86;    // [5:0.01:60]
 
 /* Shift the whole header along the length: the holes, the pin channel, the
@@ -529,7 +546,7 @@ board_t = 1.6;          // [0.4:0.1:5]
    the two is binding and how much dead air the other one is leaving. (mm)
    */
 // Tallest thing standing on top of the board, from its upper face. (mm)
-component_h = 2.5;      // [1:0.1:40]
+component_h = 2.8;      // [1:0.1:40]
 
 // There are no PCB rest pads, and no ledge_d / ledge_w to size them. The four
 // corner blocks that used to stand in the tray are gone: the board already sits
@@ -809,6 +826,183 @@ opening_z = 0.5;        // [0:0.1:30]
 usb_fit = 1;          // [0:0.05:3]
 
 
+/* [Buttons] */
+
+/* THE BOARD PICK LIST, and the switch that turns the buttons off.
+
+   Pick your devkit and the buttons are placed for it — measured off the board's
+   own USB-end corner, so a named entry follows board_w and the header rather
+   than being pinned to a spot in the case. Resize the case and it keeps up.
+
+   >> THE ENTRIES ARE ESTIMATES, NOT SPECIFICATIONS. They are where the buttons
+   >> sit on a typical board of that family, the same standing this file's
+   >> pin_x_offset = -1.0 has. MEASURE YOURS.
+
+   Custom is for a board that is not on the list, or one of these that your
+   calipers disagree with: it hands placement to the four coordinates below.
+
+   >> WHY THE FOUR COORDINATES ARE NOT LIVE AT THE NAMED ENTRIES, AND WHY THEY
+   >> HOLD REAL NUMBERS RATHER THAN 0. The Customizer cannot write one parameter
+   >> from another — OpenSCAD reads each box's default out of this file and lets
+   >> you edit it, and nothing in the panel computes. So a named entry cannot
+   >> fill the boxes in. They used to sit at 0 meaning "use the entry", which
+   >> made picking a board look like it had done nothing.
+   >>
+   >> They now default to the DevKitC positions, so the panel always shows a
+   >> real place. Switch to Custom and you start exactly where the shipped board
+   >> is, then move from there. The console prints the four figures for whichever
+   >> entry you have picked, computed for the case you actually got, so copying
+   >> a named entry into Custom is a paste rather than a calculation. */
+// Which devkit's buttons to place. Custom hands it to the four coordinates below.
+button_board = "devkitc"; // [none:None - no buttons, devkitc:ESP32-DevKitC 38-pin - EN and BOOT beside the USB, doit:DOIT DevKit v1 30-pin - EN and BOOT beside the USB, s3:ESP32-S3-DevKitC - RST and BOOT beside the USB pair, custom:Custom - place them with the four coordinates below]
+
+/* WHERE EACH BUTTON IS, measured IN FROM THE CASE'S OUTER FACES — the two you
+   can put a rule against on the finished print.
+
+       case from above: USB end to the LEFT, y = 0 along the BOTTOM edge
+
+       +--------------------------------------------------+
+       |                                                  |
+       |        (o) B  . . . . . . . . . . . . .  24.53   |
+     [USB]                                                |
+       |        (o) A  . . . . . . . . . . . . .   7.53   |
+       |         :                                        |
+       +---------+----------------------------------------+
+       :         :
+       :<- 8.1 ->:      devkitc, on the board this file ships with:
+       :                    button_a_x = 8.1   button_a_y =  7.53
+       x = 0                button_b_x = 8.1   button_b_y = 24.53
+
+   x runs along the case from the USB end's outer face; y runs across it from
+   the near long side's outer face, the one at y = 0 — the bottom edge above.
+   Both are the case's own coordinates, so what you type is where it is, and
+   what the panel shows is where it is.
+
+   >> THESE ONLY PLACE ANYTHING AT button_board = custom. At a named entry the
+   >> board places the buttons and these sit here as the starting point you get
+   >> if you switch — which is why they hold real figures rather than 0. The
+   >> console says so rather than letting them look connected.
+   >>
+   >> The defaults are the ESP32-DevKitC positions for the board this file ships
+   >> with, so Custom starts exactly where devkitc leaves off. For the other two,
+   >> on this same board:
+   >>
+   >>     board                        a_x    a_y    b_x    b_y
+   >>     ESP32-DevKitC 38-pin         8.1    7.53   8.1   24.53   <- shipped
+   >>     DOIT DevKit v1 30-pin        7.6    7.53   7.6   24.53
+   >>     ESP32-S3-DevKitC             9.6    8.03   9.6   24.03
+   >>
+   >> Those are for THIS case size. Change board_w, side_margin, or switch to
+   >> screw closure and the case gets wider, which moves the board's edges away
+   >> from y = 0 and puts the y figures off the mark. A NAMED ENTRY IS IMMUNE —
+   >> it re-derives from where the board actually is — and the console reprints
+   >> the four numbers for whatever case you got.
+
+   >> THE USB END IS THE STABLE ONE. The board sits hard against the inside of
+   >> that wall, so x is fixed against your board and only `wall` moves it —
+   >> grow the antenna bay, change pin_count, override the length, and a button
+   >> at x 8.1 stays over the same spot on the PCB.
+   >>
+   >> ACROSS THE WIDTH IT IS NOT. The board is centred, so anything that widens
+   >> the case — side_margin, board_w, width_override, or closure = screw, which
+   >> adds a whole boss_d each side — moves the board's edges away from y = 0
+   >> and slides your button relative to the board. The console prints each
+   >> button both ways, in from the case's faces and in from the board's own
+   >> USB-end corner, so that drift shows up on the line rather than in a print.
+
+   There is no magic value: at Custom each of these four is the position,
+   exactly as typed. (mm) */
+// Button A from the USB end's outer face. Used at button_board = custom. (mm)
+button_a_x = 8.1;       // [0:0.01:250]
+
+// Button A from the near side's outer face. Used at button_board = custom. (mm)
+button_a_y = 7.53;      // [0:0.01:250]
+
+// Button B from the USB end's outer face. Used at button_board = custom. (mm)
+button_b_x = 8.1;       // [0:0.01:250]
+
+// Button B from the near side's outer face. Used at button_board = custom. (mm)
+button_b_y = 24.53;     // [0:0.01:250]
+
+/* HOW TALL THE SWITCH IS above the board's top face — the actuator's top, not
+   the body's. A measurement of your hardware, like component_h or board_t, and
+   the model has no way to guess it.
+
+   It is what the button's tip has to reach down to, and it is a demand on the
+   cavity in its own right: a switch taller than the air over the board would be
+   held down by the closed lid. The cavity takes the largest of three demands and
+   the console says which one won.
+
+   A 4.5 x 4.5 SMD tact — the usual devkit part — stands about 1.5 above the
+   PCB, which is well under the 2.5 the radio can needs. It is the FLANGE, not
+   the switch, that makes the buttons cost height here. (mm) */
+// How far the switch's actuator stands above the board's top face. (mm)
+button_h = 1.5;         // [0.3:0.1:10]
+
+/* The air left under the button's tip when it is sitting at rest, and it is the
+   number that decides whether your case holds BOOT down forever.
+
+   The switch's own dome is what holds the button up: it is far stiffer than a
+   fraction of a gram of plastic, so it pushes the button until its flange meets
+   the lid's underside. This is the clearance left at that position — press it
+   and the tip crosses this, then the switch's own quarter millimetre.
+
+   Do not take it to zero. A button that prints a tenth long would then rest
+   pre-loaded on the switch, and a tenth more than that actuates it. (mm) */
+// Air under the button's flange at rest. Too little and the case holds the button on. (mm)
+button_gap = 0.3;       // [0.1:0.05:2]
+
+/* THE WHOLE BUTTON'S WIDTH — the flange, which is also the flat face that goes
+   on the bed and the flat face that presses the switch. Everything follows it:
+
+       flange     button_d           the widest thing on the part
+       hole       button_d - 2.0     what the lid gets
+       stem       hole - button_fit  through the hole, and the top you press
+
+   The 1.0 mm shoulder each side is derived. It is the lip the flange catches on,
+   and there is no second sensible value: less than about two perimeters is a lip
+   that shears off, and more is only a narrower button behind the same flange.
+
+   >> THE FLANGE IS THE ONLY WIDE END, and it has to stay that way. The button is
+   >> fed in from inside the lid, so the whole stem — the pressed top included —
+   >> passes through the bore. Putting a wide head on top as well makes a part
+   >> that cannot be assembled at all: discs bigger than the hole at both ends,
+   >> with no way in short of moulding the lid around it.
+
+   >> 5.0 IS ALSO THE PRINT. Flange down on the bed, the first layer is the full
+   >> 5.0 disc and every step above it goes INWARD, so there is no overhang
+   >> anywhere on the part — see buttons(). A wider flange only makes the bed
+   >> contact bigger; it does not buy anything.
+
+   5.0 gives a 3.0 hole and a 2.7 stem, and leaves 2.03 mm between the flange and
+   the lid's rib on a devkit-width case. The console prints that gap. (mm) */
+// The button's width: the flange, the flat bottom, and what presses the switch. (mm)
+button_d = 4.5;         // [3:0.1:20]
+
+/* HOW FAR THE STEM STANDS ABOVE THE LID at rest — proud enough to find by feel
+   without looking, and to still be proud once you have pressed it.
+
+   That second part is the constraint: the button travels button_gap plus the
+   switch's own quarter millimetre before it clicks, so anything under about
+   0.6 disappears level with the plate at the bottom of the stroke and you are
+   pressing a hole. 1.2 is six 0.2 mm layers and leaves half of it showing. (mm) */
+// How far the stem stands proud of the lid's top face at rest. (mm)
+button_proud = 2;     // [0.2:0.1:6]
+
+/* THE FIT BETWEEN THE STEM AND ITS HOLE, taken off the stem's diameter so the
+   lid's hole stays the number you asked for. This is the one dimension a
+   separate button lives or dies by, and it is the one the model cannot know:
+   it is your printer's elephant's foot, your shrinkage and your slicer's
+   compensation, not a property of the design.
+
+   0.3 total — 0.15 a side — slides freely on a well-tuned 0.4 mm nozzle. Raise
+   it if the button binds, lower it if it rattles. It is a clearance, never an
+   interference: a button pressed into its hole is a button that stops moving.
+   (mm) */
+// Clearance between the stem and the lid's hole. Raise if it binds, lower if it rattles. (mm)
+button_fit = 0.4;       // [0.05:0.05:1]
+
+
 /* [Lid] */
 
 /* Text engraved into the lid. Blank for none, which is the default — the
@@ -882,8 +1076,13 @@ vent_fit = "aspect";    // [aspect:Keep its proportions, stretch:Fill the patch 
 vent_rotate = 0;        // [-180:5:180]
 
 /* The artwork cut into the vent patch, which has to sit next to this file.
-   slots.svg (plain bars) and wifi.svg ship alongside; drop in your own and
-   name it here.
+   Three ship alongside — esphome.svg (the default), slots.svg (plain bars) and
+   wifi.svg; drop in your own and name it here.
+
+   esphome.svg is the one file here that is NOT under this model's licence: it
+   is the ESPHome logo, Apache 2.0, and the default lid cuts it. See the header
+   and "Third-party assets" in the README before you publish or sell a lid. The
+   other two are part of the model.
 
    >> THE LID NEEDS THIS FILE. Vents are always cut from artwork now, so the
    >> model is only standalone with vents = false.
@@ -1329,6 +1528,11 @@ slot_ledge  = terminal_recess ? max(0, (slot_cut_w - slot_void_w) / 2) : 0;
 
 // --- Derived dimensions ---------------------------------------------------
 
+// The rounding floor, up here because snap() is called from the first
+// assignment below and a constant read above its own line is undef. See the
+// note beside snap() further down for what that quietly did.
+fuzz = 1e-6;
+
 span = (pin_count - 1) * pin_pitch;
 
 // screw bosses need corner room across the width the auto size would not
@@ -1383,7 +1587,13 @@ inner_r = max(corner_r - wall, 0.5);
    than 0 — noise in the console, and worse than noise in the assert below,
    which compares the two and would fail on the wrong side of a rounding error.
    A nanometre is far below anything an STL or a printer resolves. */
-fuzz = 1e-6;
+/* fuzz itself is declared at the top of the derived section rather than here.
+   It used to sit on this line, which is BELOW side_margin_min's call to snap()
+   — and a variable used above its assignment is undef at file scope, so that
+   call was comparing against undef, taking the false branch and returning its
+   argument unsnapped while OpenSCAD printed "Ignoring unknown variable" and
+   carried on to Status: NoError. A function is hoisted; the constant it reads
+   is not. */
 function snap(x) = abs(x) < fuzz ? 0 : x;
 
 board_gap_side = snap((inner_w - pcb_w) / 2);
@@ -1398,7 +1608,7 @@ board_gap_end  = snap(inner_l - pcb_l);
 // is notched around both openings — but the height notes still quote it.
 opening_top = max(usb_opening ? usb_z + usb_oh : 0,
                   end_opening ? opening_z + end_h : 0);
-/* The cavity's two demands, named so the console can say which one won.
+/* The cavity's three demands, named so the console can say which one won.
 
    cav_board is what is standing on the board. cav_joint is the lid's rib having
    to clear the BOARD — not the socket, which is the whole point of notching the
@@ -1427,8 +1637,47 @@ usb_shell_h = usb_oh - usb_fit;
 cav_board   = board_top + max(component_h, usb_shell_h);
 cav_joint = board_top + rib_h + 0.4;
 
+/* Two of the button's derived sizes, declared UP HERE rather than with the rest
+   of the button block further down, because cav_button reads them and cav_button
+   has to exist before `cavity` does. A name used above its assignment is undef
+   at file scope and propagates in silence; this file has lost whole features to
+   exactly that.
+
+   button_flange_t   the flange that stops the button pulling out of its hole,
+                     and whose flat underside presses the switch. 0.6 is three
+                     0.2 mm layers; it is a solid disc with nothing to flex, so
+                     there is no reason to make it thicker, and every extra tenth
+                     is a tenth of case height. */
+button_flange_t = 0.6;
+
+/* The third demand: the lid must not be resting on the buttons.
+
+   A switch taller than the air over the board is a switch the closed lid holds
+   down, and a board stuck in the bootloader is not a subtle failure to find
+   later. So the buttons ask for their own height plus the air under the boss,
+   and if that is more than the other two want, the case gets taller.
+
+   It is NOT covered by component_h. That is the tallest thing on the board and
+   the buttons are usually well under it — 1.5 against 2.5 — but component_h
+   only has to clear a component, where a button has to clear it AND hang a
+   flange in the space above it. The two are different questions about the same
+   stack. With a flat-bottomed button it comes to 1.6 + 1.5 + 0.3 + 0.6 = 4.0,
+   which LOSES to the 4.1 the components and the joint both want — so the buttons
+   cost no case height at all. The tip that used to sit under the flange was
+   worth 0.6 of it; taking it out gave that back.
+
+   Zero with the buttons off, so it drops out of the max() entirely rather than
+   quietly holding a floor under a case that has no buttons in it. */
+cav_button = button_board == "none" ? 0
+           : board_top + button_h + button_gap + button_flange_t;
+
 cavity = cavity_h > 0 ? cavity_h
-       : max(cav_board, cav_joint);
+       : max(cav_board, cav_joint, cav_button);
+
+// which of the three won, for the report further down. Strictly greater, so a
+// tie still reads the way it always did — at the defaults the board and the
+// joint both want 4.1 and the buttons want 3.4.
+cav_button_wins = cav_button > max(cav_board, cav_joint) + fuzz;
 
 wall_h = floor_t + cavity;
 
@@ -1618,6 +1867,140 @@ latch_total = (latch_on_sides ? 2 * latch_count : 0)
             + (latch_on_ends  ? (latch_end_y_near > 0 ? 2 : 0)
                               + (latch_end_y_far  > 0 ? 2 : 0) : 0);
 
+
+// --- Buttons ---------------------------------------------------------------
+
+/* Everything about the two press buttons, derived down here because it needs
+   pcb_x, pcb_w, width and cavity — all of which are settled above — and because
+   a name used before its assignment is undef at file scope and propagates in
+   silence. That is this file's most repeated bug and it costs a whole feature
+   every time. */
+
+button_on     = button_board != "none";
+button_custom = button_board == "custom";
+
+/* What each named entry carries, measured off the board's own USB-end corner.
+   A ternary chain rather than a lookup, the same shape usb_ow uses, and the last
+   branch is a plain else so an unknown value cannot fall through to undef.
+
+   The inset is applied to whichever side each button is on, so an entry follows
+   board_w rather than pinning an absolute y. */
+button_seed_x     = button_board == "doit" ? 6.0
+                  : button_board == "s3"   ? 8.0
+                  :                          6.5;
+button_seed_inset = button_board == "s3"   ? 4.5 : 4.0;
+
+// the board's near long edge, in case coordinates. The board is centred across
+// the width, so this is the same span board_gap_side reports.
+board_y0 = (width - pcb_w) / 2;
+
+/* The named entry's two positions, converted into the case's coordinates. That
+   conversion is the whole reason an entry survives a resize: it is re-derived
+   from where the board actually is, not stored as a spot in the case.
+
+   Computed at every value of button_board, not just the named ones, because the
+   console quotes it at Custom too — that is what makes copying an entry into the
+   four coordinates a paste rather than a calculation. */
+button_seed_pos = [[pcb_x + button_seed_x, board_y0 + button_seed_inset],
+                   [pcb_x + button_seed_x, board_y0 + pcb_w - button_seed_inset]];
+
+/* One list of centres, read by the lid's hole and by the button itself so the
+   two cannot drift apart — the same reason latch_balls() serves both the lid's
+   balls and the tray's dimples from one place. Empty with the buttons off, so
+   every for() over it simply does nothing. */
+button_pos = !button_on ? []
+           : button_custom
+               ? [[button_a_x, button_a_y], [button_b_x, button_b_y]]
+               : button_seed_pos;
+
+/* The same two positions measured off the BOARD's USB-end corner, which is what
+   your calipers gave you. Derived from button_pos rather than from the settings,
+   so it describes what was built even when widening the case moved the board out
+   from under a coordinate you set against the case's face. */
+button_brd = [for (b = button_pos) [snap(b[0] - pcb_x),
+                                    snap(b[1] - board_y0)]];
+
+/* THE BUTTON, top to bottom, and why it is shaped this way.
+
+            | |         stem   the hole less button_fit, standing button_proud
+            | |                proud — its top face is what you press
+   =========| |=======   lid   hole = button_d - 2 x button_lip
+       _____| |_____
+      |_____________|   flange button_d across, 0.6 thick, SOLID — and its FLAT
+                               underside is what comes down on the switch
+        ___#####___     switch
+   ==================   PCB
+
+   TWO PLAIN CYLINDERS. There is no tip under the flange and there is no head
+   over the stem: from the bed up it goes button_d, then button_stem_d, and
+   nothing ever steps outward.
+
+   NOTHING ON IT FLEXES. That is the entire point. The printed flexure this
+   replaced fatigued and broke after a few presses, and no amount of tuning an
+   arm's thickness fixes a part whose job is to bend in PLA a few thousand times.
+
+   ONE END IS WIDER THAN THE HOLE AND IT IS THE FLANGE. The button is fed in from
+   inside the lid, stem first: the stem clears the bore by button_fit, pokes out
+   the top, and the flange stays behind and cannot follow. That is the whole
+   retention. It is also the whole assembly constraint — a wide head on top as
+   well, which this had at first, is a part that cannot go in at all.
+
+   Captive upward, not downward: with the lid off, turn it over and the button
+   drops out into your hand. Closed, it cannot go anywhere. What holds it UP is
+   THE SWITCH'S OWN DOME, stiffer than a fraction of a gram of plastic by a
+   factor of thousands — it pushes the button until the flange meets the lid's
+   underside, and that is the rest position. Press and it slides down its hole;
+   let go and the dome returns it.
+
+   There is deliberately no slack setting between flange and plate. Slack would
+   come straight out of the same vertical budget the tip needs, and a tenth
+   either way from print tolerance is free play nobody can feel. */
+
+/* The shoulder the flange catches on. Derived, because there is no second
+   sensible value: under two 0.4 perimeters it shears off, and over it is only a
+   narrower button behind the same flange. */
+button_lip    = 1.0;
+button_hole_d = max(1, button_d - 2 * button_lip);
+
+/* The fit comes off the STEM, never out of the hole, so the lid's opening stays
+   the number the panel says and every tolerance lives on the loose part — which
+   is the one you can reprint on its own when it binds. */
+button_stem_d = max(0.8, button_hole_d - button_fit);
+
+/* The flange is the widest thing on the button, so its radius is what has to
+   fit between the lid's rib and its neighbour. Nothing above the plate comes
+   near it — the stem is narrower than the hole. */
+button_r_feature = button_d / 2;
+
+/* The air actually left under the flange with the lid closed. It is button_gap
+   by construction whenever the cavity derives, because cav_button asked for
+   exactly that — but the cavity does not always derive, so this is measured back
+   out of it rather than assumed, and the check below reads it.
+
+   Through snap() because it is a difference of sums that lands on exactly zero
+   at the crossover, and unsnapped that arrives as 7.2e-16. */
+button_air = button_on
+           ? snap(cavity - board_top - button_h - button_flange_t)
+           : 0;
+
+// the whole loose part: flange, then the stem through the plate and proud of it
+button_total_h = button_flange_t + lid_t + button_proud;
+
+/* How much solid plate is left between a button and the rib's inner face — the
+   tightest thing about this feature on a devkit-width case, so it is reported
+   rather than left to be discovered.
+
+   Measured on the FLANGE, which is the binding circle: the hole is 2.0 mm
+   smaller, but the flange swings below the lid at button_d across, in exactly
+   the band where the rib hangs. */
+button_rib_gap = button_on
+               ? min([for (b = button_pos)
+                        min(b[0] - button_r_feature - rib_b,
+                            (length - rib_b) - (b[0] + button_r_feature),
+                            b[1] - button_r_feature - rib_b,
+                            (width - rib_b) - (b[1] + button_r_feature))])
+               : 0;
+
 // Artwork is laid down a quarter turn clockwise from how it is drawn, so the
 // shipped wifi.svg lands the right way round; vent_rotate adjusts from there.
 vent_angle = vent_rotate - 90;
@@ -1806,14 +2189,26 @@ assert(2 * rib_b < min(inner_l, inner_w),
            " exceeds the smaller interior dimension ", min(inner_l, inner_w),
            ". Lower rib_w or raise the case size."));
 
-/* What the cavity cost, and which of its two demands set it.
+/* What the cavity cost, and which of its three demands set it.
 
    Almost always the joint: the USB opening has to finish below the lid's rib,
    and the socket sits barely lower than the tallest thing on the board, so the
    air left over the components works out at about rib_h + 0.1 whatever
    the components are. Said out loud because "make the case shorter" sends people
    to component_h, which is the one lever that cannot do it. */
-if (cavity_h == 0 && cav_joint > cav_board + fuzz)
+if (cavity_h == 0 && cav_button_wins)
+    echo(str("NOTE: the cavity is ", cavity, " mm, set by the BUTTONS — the ",
+             "board's top face at ", board_top, " plus a ", button_h,
+             " mm switch, ", button_gap, " mm of air and a ", button_flange_t,
+             " mm flange — rather than by what is standing on the board (",
+             cav_board, ") or by the lid's rib (", cav_joint, "). The case is ",
+             snap(cav_button - max(cav_board, cav_joint)),
+             " mm taller than it would be with no buttons in it. At the shipped ",
+             "settings it does NOT win: 1.6 + 1.5 + 0.3 + 0.6 = 4.0 against 4.1, ",
+             "so the buttons normally cost no height at all. A taller switch is ",
+             "what changes that — measure button_h before paying for it."));
+
+if (cavity_h == 0 && !cav_button_wins && cav_joint > cav_board + fuzz)
     echo(str("NOTE: the cavity is ", cavity, " mm, set by the lid's rib ",
              "clearing the board (", cav_joint, ") rather than by what is ",
              "standing on it (", cav_board, "). That leaves ",
@@ -1824,11 +2219,219 @@ if (cavity_h == 0 && cav_joint > cav_board + fuzz)
              "low as the lid goes."));
 
 // the good case, worth saying so you know nothing is being wasted
-if (cavity_h == 0 && cav_joint <= cav_board + fuzz)
+if (cavity_h == 0 && !cav_button_wins && cav_joint <= cav_board + fuzz)
     echo(str("NOTE: the cavity is ", cavity, " mm and the lid lands on the ",
              "components — ", snap(cavity - cav_board),
              " mm of air over the tallest one. The rib wants ", cav_joint,
              ", which is under it, so nothing is being spent on the joint."));
+
+
+// --- Buttons ---------------------------------------------------------------
+
+/* Whether a circle of radius r at (cx, cy) reaches into an axis-aligned box.
+   Takes everything as arguments so it reads no globals, which is what lets it
+   sit up here among the checks without caring what has been assigned yet. */
+function box_hits(cx, cy, r, x0, x1, y0, y1) =
+    cx + r > x0 && cx - r < x1 && cy + r > y0 && cy - r < y1;
+
+/* Where the buttons finished, said both ways.
+
+   In from the case's faces is what you type; in from the board's USB corner is
+   what your calipers gave you; and the two only agree while the case is the
+   width it is now. Printing both is the whole answer to "widening the case
+   slides them" — resize it and this line shows the drift instead of hiding it.
+
+   In from the case's faces is what a rule reads on the finished print; in from
+   the board's USB corner is what your calipers read. Both, because they only
+   agree while the case is the width it is now. */
+if (button_on)
+    echo(str("Buttons: PRINT part = \"button\" as well — two loose ",
+             button_d, " x ", button_total_h,
+             " mm buttons that push through a ", button_hole_d,
+             " mm hole in the lid, FLANGE DOWN on the bed with no overhang ",
+             "anywhere, stem ", button_stem_d, " (", button_fit, " clearance)",
+             "  |  placed by ", button_custom
+                                 ? "your four coordinates"
+                                 : str("the ", button_board, " entry"),
+             "  |  A ", button_pos[0][0], " / ", button_pos[0][1],
+             " in from the case faces = ", button_brd[0][0], " / ",
+             button_brd[0][1], " in from the board's USB corner",
+             "  |  B ", button_pos[1][0], " / ", button_pos[1][1],
+             " in from the case faces = ", button_brd[1][0], " / ",
+             button_brd[1][1], " in from the board's USB corner",
+             "  |  ", button_flange_t, " mm flange stopping ", button_air,
+             " mm over the switch (", snap(button_h + button_air),
+             " mm over the board)",
+             "  |  ", snap(button_rib_gap),
+             " mm of plate between the flange and the lid's rib"));
+
+/* What the four coordinates are doing at a named entry — nothing — and the
+   numbers that would let them take over exactly where the entry left off.
+
+   This is the line the Customizer cannot draw for itself. It cannot write the
+   entry's position into the four boxes, so the boxes hold the DevKitC figures
+   as a starting point and this says what the entry you actually picked works
+   out to. Recomputed from the board's real position every render, so it is
+   right for the case you got rather than the one this file ships with. */
+if (button_on && !button_custom)
+    echo(str("Buttons: button_a_x / _a_y / _b_x / _b_y are not used at ",
+             "button_board = ", button_board,
+             ", which places them from the board's own corner. To take over ",
+             "from it, set button_board = custom and button_a_x = ",
+             button_seed_pos[0][0], ", button_a_y = ", button_seed_pos[0][1],
+             ", button_b_x = ", button_seed_pos[1][0], ", button_b_y = ",
+             button_seed_pos[1][1],
+             " — the same place, in this case's own coordinates. The entry ",
+             "follows the board if you resize the case; those four numbers ",
+             "would not."));
+
+/* Assembly, said once, because a captive flange is only captive after the lid
+   goes on and the order is not guessable from the parts. */
+if (button_on)
+    echo(str("Buttons go in FROM INSIDE THE LID, STEM FIRST: hold the lid ",
+             "upside down, push each button's ", button_stem_d,
+             " mm stem up through its ", button_hole_d,
+             " mm hole until the ", button_d,
+             " mm flange is flat against the underside, then fit the lid to the ",
+             "tray. The flange is the only part wider than the hole, which is ",
+             "what lets it go in at all — and it cannot come back out the top. ",
+             "Off the tray it will drop out downward, so fit the lid with the ",
+             "buttons already in it."));
+
+/* The only way the case can end up resting on the switches is cavity_h pinned
+   by hand — cav_button is in the max() otherwise — so this names that setting
+   rather than the buttons. */
+if (button_on && button_air < button_gap - fuzz)
+    echo(str("WARNING: cavity_h pins the cavity at ", cavity,
+             " mm but the buttons need ", cav_button,
+             " — the board's top face at ", board_top, " plus a ", button_h,
+             " mm switch, ", button_gap, " mm of air and a ", button_flange_t,
+             " mm flange. The flange sits ", button_air,
+             " mm over the switch instead of ", button_gap, ", so the closed case ",
+             button_air <= 0
+               ? "WILL HOLD THE BUTTONS DOWN"
+               : "presses them part way and any print tolerance finishes the job",
+             ". Clear cavity_h and let it derive, or lower button_h if you ",
+             "measured the switch's body rather than its actuator."));
+
+
+/* The stem has to stay proud through its whole stroke, or the top of it lands
+   level with the plate and there is nothing left to press on. */
+if (button_on && button_proud < button_gap + 0.25)
+    echo(str("WARNING: the stem stands ", button_proud,
+             " mm proud but the button travels ", snap(button_gap + 0.25),
+             " mm before the switch clicks — ", button_gap,
+             " of air plus about a quarter of the switch's own — so it finishes ",
+             "the stroke level with or below the lid and there is nothing to ",
+             "press. Raise button_proud past ", snap(button_gap + 0.25),
+             ", or lower button_gap."));
+
+/* The fit is the one number that decides whether a loose part works, and 0 is
+   an interference on any real printer. */
+if (button_on && button_fit < 0.1)
+    echo(str("WARNING: button_fit ", button_fit, " leaves ", button_fit / 2,
+             " mm a side between a ", button_stem_d, " mm stem and its ",
+             button_hole_d, " mm hole. On a 0.4 mm nozzle that is inside the ",
+             "print's own tolerance, so the button will bind or seize rather ",
+             "than slide. 0.3 is a working starting point."));
+
+/* The button has to fit between the lid's rib and its opposite number, and on a
+   devkit-width board it is the rib that runs out first.
+
+   Measured on the FLANGE, which is the binding circle: the hole through the
+   plate is 2.0 mm smaller, but the flange swings below the lid at button_d
+   across, in exactly the band where the rib hangs. Foul it and the button
+   cannot seat — which is a worse failure than a hole near the rib, because it
+   stops the lid closing rather than just thinning it. */
+for (i = [0 : len(button_pos) - 1])
+    let (cx = button_pos[i][0], cy = button_pos[i][1],
+         over = max(rib_b - (cx - button_r_feature),
+                    (cx + button_r_feature) - (length - rib_b),
+                    rib_b - (cy - button_r_feature),
+                    (cy + button_r_feature) - (width - rib_b)))
+        if (over > fuzz)
+            echo(str("WARNING: button ", i == 0 ? "A" : "B", " at x ", cx,
+                     " y ", cy, " runs its flange ", over,
+                     " mm into the lid's rib. The flange is ", button_d,
+                     " mm across and the rib's inner face is ", rib_b,
+                     " mm in from every edge, so the button will not sit flat ",
+                     "under the plate. Lower button_d, or raise side_margin to ",
+                     "widen the case."));
+
+if (button_on && norm(button_pos[0] - button_pos[1]) < 2 * button_r_feature - fuzz)
+    echo(str("WARNING: the two buttons are ",
+             norm(button_pos[0] - button_pos[1]),
+             " mm apart and each feature is ", 2 * button_r_feature,
+             " mm across, so they overlap. Lower button_d, or check the ",
+             "coordinates — on most devkits the two sit either side of the ",
+             "socket, which on a ", pcb_w, " mm board is about ",
+             snap(pcb_w - 2 * button_seed_inset), " mm apart: the same x, and y ",
+             "at ", button_seed_pos[0][1], " and ", button_seed_pos[1][1],
+             " in from the near face."));
+
+/* The boss presses whatever is under it, and off the board that is nothing.
+   Tested on the board-relative position rather than on the setting, so it still
+   catches a button that only went off the board because the case grew and took
+   its centre with it. */
+for (i = [0 : len(button_pos) - 1])
+    let (bx = button_brd[i][0], by = button_brd[i][1])
+        if (bx < 0 || by < 0 || bx > pcb_l || by > pcb_w)
+            echo(str("WARNING: button ", i == 0 ? "A" : "B", " lands ", bx,
+                     " / ", by, " in from the board's USB corner, on a board ",
+                     "that is only ", pcb_l, " x ", pcb_w,
+                     " mm, so the tip comes down past its edge and presses on ",
+                     "nothing.",
+                     button_custom
+                       ? str(" Your coordinates are measured in from the CASE's ",
+                             "outer faces, and the board starts ", pcb_x, " / ",
+                             board_y0, " in from those — so a button is on the ",
+                             "board between x ", pcb_x, " and ", pcb_x + pcb_l,
+                             " and y ", board_y0, " and ", board_y0 + pcb_w, ".")
+                       : str(" That should not happen from the ", button_board,
+                             " entry, which measures off the board itself — ",
+                             "check board_l and board_w against your hardware.")));
+
+/* Two things already own patches of this lid, and neither of them moves out of
+   the way. Bounding boxes, and the vent one is an estimate: with vent_fit =
+   aspect the artwork's own proportions set the height, not vent_zone_w. */
+for (i = [0 : len(button_pos) - 1])
+    if (vents && box_hits(button_pos[i][0], button_pos[i][1], button_r_feature,
+                          vent_zone_x0, vent_zone_x0 + vent_zone_l,
+                          width / 2 - vent_zone_w / 2,
+                          width / 2 + vent_zone_w / 2))
+        echo(str("WARNING: button ", i == 0 ? "A" : "B",
+                 " overlaps the vent patch, which runs x ", vent_zone_x0, " to ",
+                 vent_zone_x0 + vent_zone_l, ". The vents are cut after the ",
+                 "button's hole, so they will open its side out and the button ",
+                 "will not stay in. Move the patch with vent_from_end, or ",
+                 "shrink it with vent_zone_l."));
+
+for (i = [0 : len(button_pos) - 1])
+    if (label != "" && box_hits(button_pos[i][0], button_pos[i][1],
+                                button_r_feature,
+                                label_cx - label_x_est / 2,
+                                label_cx + label_x_est / 2,
+                                width / 2 - label_y_est / 2,
+                                width / 2 + label_y_est / 2))
+        echo(str("WARNING: button ", i == 0 ? "A" : "B",
+                 " looks to be under the label, which is roughly ", label_x_est,
+                 " x ", label_y_est, " mm at x ", label_cx,
+                 ". Estimated, not measured — OpenSCAD cannot measure text ",
+                 "without an experimental option — so check the render. Set ",
+                 "label_x to move it."));
+
+if (button_on && closure == "screw")
+    for (i = [0 : len(button_pos) - 1])
+        for (bx = [wall + boss_d / 2, length - wall - boss_d / 2])
+            for (by = [wall + boss_d / 2, width - wall - boss_d / 2])
+                if (norm(button_pos[i] - [bx, by])
+                    < button_r_feature + screw_d / 2 - fuzz)
+                    echo(str("WARNING: button ", i == 0 ? "A" : "B",
+                             " reaches the corner screw hole at ", bx, " / ", by,
+                             ". Screw bosses stand in the corners and the lid ",
+                             "is drilled through for them, so the button's ",
+                             "flange has to keep clear. Lower button_d, or use ",
+                             "closure = friction."));
 
 /* The overhang is the plug's whole story, so say what it left. */
 if (usb_opening && usb_overhang > 0)
@@ -2656,6 +3259,81 @@ module lid_vents() {
                         vent_art();
 }
 
+
+/* All the lid gets: one plain bore per button, straight through the plate.
+
+   That is the whole change from the flexure this replaced — no slots, no spring
+   arms, no relief pocket, nothing thinner than the plate itself. Everything that
+   used to be cut into the lid now lives on a separate part that cannot fatigue,
+   because a lid feature that breaks takes the lid with it. */
+module buttons_cut() {
+    for (b = button_pos)
+        translate([b[0], b[1], -0.1])
+            cylinder(d = button_hole_d, h = lid_t + 0.2);
+}
+
+/* One loose button, in ASSEMBLED orientation: z = 0 is the lid's underside, so
+   the flange and the tip hang below and the stem stands up through the hole.
+   Placed this way it drops straight into the assembly preview, and the print
+   orientation is one rotate away.
+
+   >> ONLY ONE END MAY BE WIDER THAN THE HOLE, and it is the flange. The button
+   >> goes in from inside the lid, stem first, so everything that has to pass
+   >> through the hole — the whole stem, including the part you press — is
+   >> button_stem_d, narrower than the bore by button_fit. The flange stays
+   >> behind and that is what makes it captive.
+   >>
+   >> An earlier version put a wide head on top as well. It could not be
+   >> assembled at all: with a disc bigger than the hole at BOTH ends there is no
+   >> way in short of moulding the lid around it. If you change anything here,
+   >> that is the rule to keep — one wide end, and it is the one that stays
+   >> inside.
+
+   Every step is a stack of plain cylinders with a 0.01 overlap at each joint
+   rather than face-to-face contact. Butting one solid exactly onto another is
+   how this model makes non-manifold edges, and a three-step stack is three
+   chances to do it. */
+module button_part() {
+    // flange: the one wide end. Its top face is the stop against the lid's
+    // underside; its flat bottom face is what comes down on the switch.
+    translate([0, 0, -button_flange_t])
+        cylinder(d = button_d, h = button_flange_t + 0.01);
+
+    // the stem: through the plate and on up, its top face the thing you press
+    cylinder(d = button_stem_d, h = lid_t + button_proud);
+}
+
+/* The buttons where they belong, for the assembly preview. Not part of the lid:
+   they are loose, and showing them fused to it would be a lie about what you
+   print. */
+module buttons_placed() {
+    for (b = button_pos)
+        translate([b[0], b[1], 0]) button_part();
+}
+
+/* Print orientation: FLANGE DOWN, and this is the easiest part in the model to
+   print because of it.
+
+   The flange's underside is flat and it is the widest thing on the button, so
+   the first layer is the full button_d disc — a solid, stable footprint — and
+   every step above it goes INWARD, to the stem. There is no overhang anywhere on
+   the part, at any setting, and nothing to bridge.
+
+   That is the whole reason the button has no tip under the flange. A tip would
+   put a step OUTWARD low down — an unsupported annular ledge — and it would cost
+   its own length in case height on top. The flange's own flat face comes down on
+   the switch instead, and a tact switch's actuator stands proud of its body, so
+   there is room to press it.
+
+   No rotation is needed: button_part() is already built flange-at-the-bottom, so
+   the print is the assembled part lifted onto the bed. */
+module buttons() {
+    for (i = [0 : len(button_pos) - 1])
+        translate([button_d / 2 + i * (button_d + layout_gap), button_d / 2,
+                   button_flange_t])
+            button_part();
+}
+
 /* Lid in assembled orientation: z = 0 is the underside that meets the top of
    the tray wall, the tongue hangs below it, the plate sits above. */
 module lid_assembled() {
@@ -2696,6 +3374,8 @@ module lid_assembled() {
                 cube([rib_w + 0.1, end_w, tongue_h + 0.1]);
 
         lid_vents();
+
+        buttons_cut();
 
         if (label != "")
             translate([label_cx, width / 2, lid_t - label_depth])
@@ -2792,6 +3472,17 @@ module template() {
                     translate([x_first + i * pin_pitch, cy, 0])
                         plate_hole(template_t, hole);
 
+        /* There is deliberately NOTHING here for the buttons, and the omission
+           is worth stating because this looks like exactly the place for it.
+
+           The template answers "does my board fit" by having you drop the board
+           into it — which puts the board ON TOP of this floor. A mark at a
+           button's position would end up underneath it, where you cannot see it
+           and cannot line anything up against it, so it would answer nothing.
+           The buttons are on the board's upper face; what checks them is the
+           console's report of where each one landed, and the assembled preview.
+           */
+
         // a scored line at the board's far edge — everything past it is bay
         if (antenna_gap > 0)
             translate([pcb_x + pcb_l + 0.1, wall, template_t - 0.4])
@@ -2804,14 +3495,27 @@ module template() {
 
 if (part == "tray")          tray();
 else if (part == "lid")      lid();
+else if (part == "button")   buttons();
 else if (part == "template") template();
 else if (part == "all") {
     tray();
     translate([0, width + layout_gap, 0]) lid();
+    // the buttons tuck in beside the two big parts rather than beyond them, so
+    // the layout does not grow a whole part's width for two 7 mm discs
+    translate([0, 2 * (width + layout_gap), 0]) buttons();
 }
 else if (part == "assembled") {
     tray();
     translate([0, 0, wall_h]) lid_assembled();
+    // loose, so they are drawn where they sit rather than fused to the lid
+    translate([0, 0, wall_h]) buttons_placed();
 }
 else assert(false, str("Unknown part \"", part,
-                       "\". Use tray, lid, template, all or assembled."));
+                       "\". Use tray, lid, button, template, all or assembled."));
+
+/* Asking for the buttons with none configured renders an empty file, and an
+   empty STL is the kind of thing you notice at the printer rather than here. */
+if (part == "button" && !button_on)
+    echo(str("WARNING: part = \"button\" but button_board is \"none\", so there ",
+             "is nothing to render and the export will be empty. Pick a board, ",
+             "or Custom, to get the two press buttons."));

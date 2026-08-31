@@ -10,6 +10,14 @@ up into those pockets from below, finishing **flush with the floor** instead of
 hanging out of the case, with the wires leaving straight down through the open
 underside. Past the board's far edge is a clear bay for the onboard antenna.
 
+The devkit's **EN and BOOT buttons come up through the lid**, so you can reset
+and flash the board with the case shut. Each is a **separate printed part** — a
+stem standing proud through a plain hole in the lid, a flange underneath that
+keeps it captive and comes down flat on the switch — fed in from inside the lid,
+stem first, before the lid goes on. Nothing on it flexes,
+which is the whole point: the printed flexure this replaced fatigued and broke
+after a few presses.
+
 **The geometry is one file.** [`esp-enclosure.scad`](esp-enclosure.scad) has no
 `use <>` and no `include <>`, so the tray and the fit template render from it
 alone. The lid is the exception: its vents are cut from artwork
@@ -23,8 +31,9 @@ in an SVG beside it, so that file has to travel with the model. Set
 3. **Window → Customizer**, set your parameters.
 4. Choose a part with `part` at the top, press **F6**, then **File → Export → STL**.
 
-Print the `tray` and the `lid` — but print the `template` first. It is quick, and
-it catches the way a full case usually goes wrong: your board not fitting it.
+Print the `tray`, the `lid` and the two `button`s — but print the `template`
+first. It is quick, and it catches the way a full case usually goes wrong: your
+board not fitting it.
 
 > **Nothing here has been tested physically.** Whether a Dupont terminal grips at
 > the default clearance, whether your devkit's pins are long enough, whether the
@@ -36,7 +45,7 @@ it catches the way a full case usually goes wrong: your board not fitting it.
 
 Set `part = "template"`. It is a shallow stand-in for the tray — same footprint,
 same interior outline, same pin holes in the same places, same screw bosses —
-but 4.2 mm tall instead of 13.1.
+but 4.2 mm tall instead of 13.6.
 
 Drop your actual devkit into it and you can see all three things at once:
 
@@ -58,7 +67,7 @@ pin has to clear the standoff *and* the hole plate and still have 2–4mm left
 over. The model works this out and prints it to the console:
 
 ```
-ECHO: "Case 59.92 x 32.06 x 14.7 mm | header 19 x2 @ 2.54 (2.5 mm plastic
+ECHO: "Case 59.92 x 32.06 x 15.2 mm | header 19 x2 @ 2.54 (2.5 mm plastic
 surround) | 3 x 3 mm pin channel (clearance, not a fit) | 1.2 x 1.2 mm wire
 channels, 1.34 mm rib (set) | 8 mm of pin inside the trough | board gap
 1.93 mm each side / 5 mm at the far end | USB micro 8.5 x 3.5 at 1.1 above
@@ -146,8 +155,8 @@ the crimped-terminal mode.
 
 | Channel swallows the spacer? | 1.2 | 2.5 |
 | --- | --- | --- |
-| yes | 14.7, grip 8.0 | 14.7, grip 8.0 |
-| no (`dupont_housing` and `pin_slot` off) | 14.7, grip 6.8 | 15.2, grip 5.5 |
+| yes | 15.2, grip 8.0 | 15.2, grip 8.0 |
+| no (`dupont_housing` and `pin_slot` off) | 15.2, grip 6.8 | 15.7, grip 5.5 |
 
 #### It will not lift the PCB off the bottom of the box
 
@@ -273,10 +282,10 @@ Every millimetre you bury is a millimetre of case, and that is the whole trade:
 
 | `terminal_len` | Case height | A ~15 mm housing then shows |
 | --- | --- | --- |
-| 3 | 14.7 | 12.0 |
-| 6 | 14.7 | 9.0 |
-| 10 | 16.7 | 5.0 |
-| 15 | 21.7 | 0.0 — flush underneath |
+| 3 | 15.2 | 12.0 |
+| 6 | 15.2 | 9.0 |
+| 10 | 17.2 | 5.0 |
+| 15 | 22.2 | 0.0 — flush underneath |
 
 Pick the row you want. How long your housings are is a measurement only you have,
 so the model does not guess at it.
@@ -350,7 +359,7 @@ what makes `pin_length` change the case at all:
 | `pin_length` | 3 | 6 | 7 | 9 | 12 | 16 |
 | --- | --- | --- | --- | --- | --- | --- |
 | Pocket | 6.0 | 6.0 | 6.0 | **8.0** | 11.0 | 15.0 |
-| Case height | 12.7 | 12.7 | 12.7 | **14.7** | 17.7 | 21.7 |
+| Case height | 13.2 | 13.2 | 13.2 | **15.2** | 18.2 | 22.2 |
 
 **The board drop is already in this.** With the pin channel on the board sits
 1.2 mm lower, the pin reaches 1.2 mm further down, and the floor grows to swallow
@@ -410,11 +419,12 @@ and reports a *negative* genus, which is the only sign you get. The extent is
 identical either way, so nothing moves — what goes away is interior faces that
 never had any business existing.
 
-The topology tells you which you got. Sealed-base with a merged slot is genus 37:
-one blind pocket per row reached by 19 openings, 18 handles apiece, plus the USB
-opening. Sealed-base with separate pockets is **genus 1** — each pocket is
-reached by exactly one hole, so it contributes no handle at all, and only the USB
-opening is left.
+The topology tells you which you got. At the shipped defaults the trough and the
+channel above it are the same width, so the two merge into one opening straight
+through the floor and the tray is **genus 2** — one handle per row, and nothing
+else passes through it. Seal the base and both close into blind pockets:
+**genus 0**. The USB opening never counts either way, because it lets the outside
+into a cavity that is already open at the top.
 
 ### Sealing the bottom
 
@@ -429,14 +439,16 @@ then sit. The case grows by the thickness of the slab.
 
 | | Default | Sealed |
 | --- | --- | --- |
-| Case height | 14.70 mm | 16.70 mm (+`floor_solid`) |
+| Case height | 15.20 mm | 17.20 mm (+`floor_solid`) |
 | Underside over a trough | open | **solid 2.00 mm** |
-| Pin into the trough | 3.8 mm | 3.8 mm — unchanged |
-| Genus | 39 | 37 |
+| Pin into the trough | 8.0 mm | 8.0 mm — unchanged |
+| Genus | 2 | 0 |
 
-Genus 37 is the arithmetic working out: each trough becomes one blind pocket
-reached by 19 hole-and-channel openings, 18 handles apiece, plus the USB opening.
-Turn the USB opening off and it is exactly 36.
+**Genus 2 → 0 is the check that it worked.** Open, the tray's only through-holes
+are the two pin channels, one per row — the USB opening lets air from outside
+into a cavity that is already open at the top, so it adds no handle. Seal the
+base and both channels become blind pockets, closed at the bottom by the slab and
+open only upward into the cavity. Nothing passes through the tray at all.
 
 You cannot fit a crimp terminal into a sealed trough, so the model stops reporting
 terminal grip when the base is closed and warns instead if the pins are longer
@@ -756,11 +768,11 @@ rather than a big hole being left for the plug to pass through.
 
 | `usb_type` | Receptacle shell | Opening | Case height |
 | --- | --- | --- | --- |
-| `micro` | 7.50 × 2.50 | 8.30 × 3.30 | 14.7 |
-| `c` | 8.95 × 3.20 | 9.75 × 4.00 | 15.4 |
-| `mini` | 7.70 × 4.00 | 8.50 × 4.80 | 16.2 |
-| `a` | 13.00 × 5.70 | 13.80 × 6.50 | 17.9 |
-| `custom` | — | `usb_w` × `usb_h` | 18.0 at 12 × 6 |
+| `micro` | 7.50 × 2.50 | 8.50 × 3.50 | 15.2 |
+| `c` | 8.95 × 3.20 | 9.95 × 4.20 | 15.4 |
+| `mini` | 7.70 × 4.00 | 8.70 × 5.00 | 16.2 |
+| `a` | 13.00 × 5.70 | 14.00 × 6.70 | 17.9 |
+| `custom` | — | `usb_w` × `usb_h` | 17.2 at 12 × 6 |
 
 Sockets vary far less between boards than cable overmoulds do, which is what makes
 flush mount worth having — but measure yours, and use `custom` if it disagrees,
@@ -771,16 +783,16 @@ to line up, and the socket stands on the board's *top* face, so that face is the
 only thing that can decide where the opening goes:
 
 ```
-usb_z = board_under + board_t - usb_fit/2   = 0.0 + 1.6 - 0.4 = 1.2
+usb_z = board_under + board_t - usb_fit/2   = 0.0 + 1.6 - 0.5 = 1.1
 
 board_under = pcb_standoff - board_drop, i.e. 0 while the channel swallows
-the spacer.  With no channel it is pcb_standoff, and usb_z is 2.5.
+the spacer.  With no channel it is pcb_standoff, and usb_z is 2.3.
 ```
 
-Measured on the mesh: the wall is solid to **z 10.20** and open from there to the
-rim at 13.10, the lid sitting low enough that the opening reaches the top edge. A
-2.5 mm micro shell on the board's top face (10.60) occupies 10.60–13.10 —
-**0.40 mm clear beneath it.** At the old fixed `opening_z = 0.5` that same opening
+Measured on the mesh: the wall is solid to **z 10.10** and open from there to the
+rim at 13.60, the lid sitting low enough that the opening still reaches the top
+edge. A 2.5 mm micro shell on the board's top face (10.60) occupies 10.60–13.10 —
+**0.50 mm clear beneath it.** At the old fixed `opening_z = 0.5` that same opening
 would have caught 0.8 mm of the shell and missed the rest. `opening_z` still
 places the *far end* opening, which has no socket to meet.
 
@@ -789,10 +801,10 @@ corner the real shell curves away from is a gap left behind.
 
 | `usb_type` | Outline | Width, bottom to top |
 | --- | --- | --- |
-| `micro` | Trapezoid, wider at the top | 7.40 → 8.30 |
-| `mini` | Trapezoid, wider at the top | 7.30 → 8.50 |
-| `c` | Obround, radius = half the height | 9.75 at mid-height, tapering to the caps |
-| `a` | Rectangle — genuinely is one | 13.80 throughout |
+| `micro` | Trapezoid, wider at the top | 7.60 → 8.50 |
+| `mini` | Trapezoid, wider at the top | 7.50 → 8.70 |
+| `c` | Obround, radius = half the height | 9.95 at mid-height, tapering to the caps |
+| `a` | Rectangle — genuinely is one | 14.00 throughout |
 
 The micro/mini taper is what stops a plug going in upside down, so it is the part
 of the outline most worth having. It is approximate — a shell's draft varies by
@@ -842,12 +854,12 @@ The test is the channel against `strip_w`, the spacer's width:
 
 | | USB `z` | Pin in pocket | Case height |
 | --- | --- | --- | --- |
-| no channel at all — `dupont_housing` **and** `pin_slot` off | 2.4 | 6.8 | 14.7 |
-| `pin_slot_w = 0` (2.70 mm channel, under `strip_w`) | 2.4 | 6.8 | 14.7 — spacer bridges it |
-| `pin_slot_w = 3` | 1.2 | **8.0** | **14.7** |
-| `pin_slot_w = 4` | 1.2 | **8.0** | **14.7** |
-| `pin_slot_w = 4`, `pin_slot_depth = 1` | 1.4 | 7.8 | 14.7 |
-| `pin_slot_w = 4`, `pin_slot_depth = 12` | 1.2 | 8.0 | 14.7 — capped |
+| no channel at all — `dupont_housing` **and** `pin_slot` off | 2.3 | 6.8 | 15.2 |
+| `pin_slot_w = 0` (2.70 mm channel, under `strip_w`) | 2.3 | 6.8 | 15.2 — spacer bridges it |
+| `pin_slot_w = 3` | 1.1 | **8.0** | **15.2** |
+| `pin_slot_w = 4` | 1.1 | **8.0** | **15.2** |
+| `pin_slot_w = 4`, `pin_slot_depth = 1` | 1.3 | 7.8 | 15.2 |
+| `pin_slot_w = 4`, `pin_slot_depth = 12` | 1.1 | 8.0 | 15.2 — capped |
 
 The first row needs **both** off: `dupont_housing` forces `pin_slot` on, so
 turning `pin_slot` off alone changes nothing while the surround is ticked.
@@ -859,10 +871,10 @@ that wide or wider swallows it:
 
 | `pin_slot_w` | vs `strip_w` 3.0 | USB `z` | Case |
 | --- | --- | --- | --- |
-| 0 (2.70 mm channel) | bridged | 2.4 | 14.7 |
-| 2.9 | bridged | 2.4 | 14.7 |
-| 3.0 | swallowed | 1.2 | 14.7 |
-| 4.0 | swallowed | 1.2 | 14.7 |
+| 0 (2.70 mm channel) | bridged | 2.3 | 15.2 |
+| 2.9 | bridged | 2.3 | 15.2 |
+| 3.0 | swallowed | 1.1 | 15.2 |
+| 4.0 | swallowed | 1.1 | 15.2 |
 
 Measure your own spacers and set `strip_w` to match: at 3.5 the default channel
 bridges again and the board does not move. The old assumption called a 2.6 mm
@@ -885,8 +897,8 @@ the board drops just as it would with the tick off and the channel set by hand:
 
 | | Case height | USB `z` | Pin in trough |
 | --- | --- | --- | --- |
-| `pin_slot` on, 3 mm channel | 14.7 | 1.2 | 8.0 |
-| `dupont_housing` on | 14.7 | 1.2 | 8.0 |
+| `pin_slot` on, 3 mm channel | 15.2 | 1.1 | 8.0 |
+| `dupont_housing` on | 15.2 | 1.1 | 8.0 |
 
 An earlier version suppressed the drop for the surround, reasoning that the
 housings rise to the floor's top face and the strip lands on *them*. **A housed
@@ -897,36 +909,71 @@ it bottoms out on the slab, and that has its own warning.
 
 ### Height
 
-`cavity_h = 0` derives the interior height, taking the larger of what the board
-needs and what the lid's rib needs to clear the wall openings:
+`cavity_h = 0` derives the interior height, taking the largest of three demands:
+what stands on the board, what the lid's rib needs to clear it, and what the
+buttons need if the closed lid is not to hold them down.
 
 ```
-cavity = max(board_top + max(component_h, usb_shell_h),   2.8 + 2.5       = 5.3  <- wins
-             board_top + rib_h + 0.4)                     2.8 + 2.1 + 0.4 = 5.3
+cavity = max(board_top + max(component_h, usb_shell_h),   1.6 + 2.5             = 4.1
+             board_top + rib_h + 0.4,                     1.6 + 2.1 + 0.4       = 4.1
+             board_top + button_h + button_gap + flange)   1.6 + 1.5 + 0.3 + 0.6 = 4.0
 ```
 
-**The components set the height.** That is the point of notching the rib, and it
-took three goes to get there:
+**The buttons lose, so they cost no case height at all.** A 4.5 × 4.5 tact
+stands about 1.5 mm off the PCB where the radio can stands 2.5, and the only
+thing the button adds above it is a 0.6 mm flange:
+
+```
+   lid underside  ─────────────────  4.1 above the board, set by the components
+                    flange 0.6
+   flange face    ─────────────────  1.9, so 0.4 of air over the switch
+   switch top     ─────────────────  1.5
+   board top      ═════════════════  0
+```
+
+An earlier cut of this button had a tip under the flange to hold it off the
+switch, and *that* cost 0.5 mm — 15.2 instead of 14.7. Making the flange's own
+face flat and letting it press the switch gave the 0.5 back. Height only moves
+now when the switch itself passes the components:
+
+| `button_h` | **1.5** | 2.5 | 3.0 | 4.0 | 6.0 |
+| --- | --- | --- | --- | --- | --- |
+| Cavity | **4.6** | 5.6 | 6.1 | 7.1 | 9.1 |
+| Case height | **15.2** | 16.2 | 16.7 | 17.7 | 19.7 |
+
+The console names whichever of the three won, and says what the other two were
+asking for. `button_board = "none"` takes the term out of the `max()` entirely
+and the case goes back to 14.7.
+
+**Getting the joint out of the way took three goes**, and then the buttons bought
+half a millimetre of it back:
 
 | | Cavity | Case | Air over the components | Set by |
 | --- | --- | --- | --- | --- |
 | Groove in the wall, depth 4.0 | 10.0 | 19.0 | 4.1 | the joint |
 | Rib inside the wall, `rib_h` 2.5 | 8.5 | 17.5 | 2.6 | the joint |
 | Rib notched around the socket | 5.9 | 14.9 | 0.6 | the components |
-| **Plus `rib_h` 2.1, socket in the stack** | **4.1** | **14.7** | **0** | **the components** |
+| Plus `rib_h` 2.1, socket in the stack | 4.1 | 14.7 | 0 | the components |
+| **Plus a separate press button** | **4.6** | **15.2** | **0.5** | **the buttons** |
+
+The first four rows are history — how the joint stopped setting the height. The
+last is where it stands: the components would close the lid at 4.1 and the rib
+would allow it, and the buttons ask for less than either. Set
+`button_board = "none"` and nothing about the height changes at all.
 
 **The socket counts as a component.** The cavity takes the larger of
 `component_h`, which you measured, and `usb_shell_h`, which `usb_type` implies, so
-a tall connector cannot be forgotten: USB-C's 3.2 mm shell against a
-`component_h` of 2.5 gives a 6.0 cavity, not 5.3, and the lid does not close onto
-the socket:
+a tall connector cannot be forgotten and the lid does not close onto the socket.
+Measured at the shipped defaults, buttons and all — `micro` is the one case where
+the buttons are what set the height, so it is the only row that moves if you turn
+them off:
 
-| `usb_type` | Shell | Cavity | Case |
-| --- | --- | --- | --- |
-| `micro` | 2.50 | 4.1 | 14.7 |
-| `c` | 3.20 | 4.8 | 15.4 |
-| `mini` | 4.00 | 5.6 | 16.2 |
-| `a` | 5.70 | 7.3 | 17.9 |
+| `usb_type` | Shell | Cavity | Case | Set by |
+| --- | --- | --- | --- | --- |
+| `micro` | 2.50 | 4.6 | 15.2 | the buttons |
+| `c` | 3.20 | 4.8 | 15.4 | the socket |
+| `mini` | 4.00 | 5.6 | 16.2 | the socket |
+| `a` | 5.70 | 7.3 | 17.9 | the socket |
 
 The rib hangs around the perimeter and only overlaps the board at the USB end.
 Cut it away over the socket's width and the tallest thing it has to miss is the
@@ -934,17 +981,19 @@ board's own top face — `board_top + rib_h` instead of `opening_top + rib_h`,
 2.6 mm lower. The far-end opening is notched the same way.
 
 So `rib_h` is free up to `component_h − 0.4` — **2.1** at the defaults, where it
-now sits, so the joint costs no height at all:
+now sits, so the joint costs no height at all. With the buttons on it is free
+further still, because they are holding the lid higher than the rib needs:
 
 | `rib_h` | 1.5 | 2.0 | **2.1** | 3.0 | 4.0 |
 | --- | --- | --- | --- | --- | --- |
-| Case height | 14.7 | 14.7 | **14.7** | 15.6 | 16.6 |
+| Case height | 15.2 | 15.2 | **15.2** | 15.6 | 16.6 |
 
-`component_h` is what moves the lid now: set it to your tallest part and the lid
-comes down to meet it, with the console naming whichever term won.
+`component_h` and `button_h` are what move the lid now: set them to your tallest
+part and your switch and the lid comes down to meet whichever wins, with the
+console naming it.
 
 **The pocket is the biggest single lever.** The floor is `pocket + hole_plate_t`
-= 9.0 mm of the 14.7 mm total, well over half the case.
+= 9.0 mm of the 15.2 mm total, well over half the case.
 
 Set `cavity_h` to a number to pin it; an `assert` catches a value so low that an
 opening runs up below the rib.
@@ -1045,25 +1094,26 @@ so a missing pair never looks like a setting that did nothing.
 
 Vents sit in a patch over the radio module — the only part of a devkit that gets
 meaningfully warm — rather than spread across the plate, which keeps the rest of
-the lid solid and leaves room for the label. The patch defaults to **20 × 20 mm**,
+the lid solid and leaves room for the label. The patch defaults to **15 × 15 mm**,
 positioned with `vent_from_end`, `vent_zone_l` and `vent_zone_w`. `vent_from_end`
 is measured from the board's far edge, so the patch stays over the module whatever
 the antenna bay is.
 
-Vents are always cut from **artwork in an SVG**, named by `vent_file`. Two ship
+Vents are always cut from **artwork in an SVG**, named by `vent_file`. Three ship
 with the model:
 
 | File | What it is |
 | --- | --- |
-| [`slots.svg`](slots.svg) | Five plain bars across the patch. The default. |
+| [`esphome.svg`](esphome.svg) | The ESPHome logo. **The default** — and the one file here that is not ours, so read [Third-party assets](#third-party-assets) before you ship it |
+| [`slots.svg`](slots.svg) | Five plain bars across the patch |
 | [`wifi.svg`](wifi.svg) | The wifi symbol |
 
 `vent_rotate` turns the artwork on the lid, counter-clockwise as you look down at
 the closed case. **Zero is not "as drawn"** — artwork is laid down a quarter turn
 clockwise from how it sits in the file, which stands `slots.svg` bars up across
-the case and puts `wifi.svg` dot-beside-the-label, so 0 is the orientation you
-want. The turn is applied before scaling, so `vent_zone_l` always measures across
-the finished orientation.
+the case, puts `wifi.svg` dot-beside-the-label and points `esphome.svg` toward
+the far end, so 0 is the orientation you want. The turn is applied before
+scaling, so `vent_zone_l` always measures across the finished orientation.
 
 `vent_fit` either keeps the artwork's proportions or stretches it to
 fill the patch. With `aspect`, `vent_zone_w` is unused: the artwork is scaled to
@@ -1093,6 +1143,256 @@ Two things to know if you are drawing your own:
 > a file's existence, so no `assert` can catch it. The console line names the file
 > the lid used; an unvented lid is the symptom. The tray and template are
 > unaffected, as is the lid with `vents = false`.
+
+### Buttons
+
+The devkit's **EN** and **BOOT** switches come up through the lid, so you can
+reset and flash the board without taking the case apart. Each one is a
+**separate printed part**: a stem that stands proud through a plain hole in the
+lid and a flange underneath that keeps it captive and comes down flat on the
+switch. It is fed in from inside the lid, stem first. All the lid gets is the
+hole. Print them with `part = "button"`.
+
+`button_board` is the pick list and the switch that turns the feature off. Pick
+your devkit and the buttons are placed for it, **measured off the board's own
+USB-end corner** — so an entry follows `board_w` and the header rather than being
+pinned to a spot in the case. Resize the case and it keeps up.
+
+| `button_board` | x from the USB edge | Inset from each side edge |
+| --- | --- | --- |
+| `none` | — | no buttons at all |
+| `devkitc` | 6.5 | 4.0 |
+| `doit` | 6.0 | 4.0 |
+| `s3` | 8.0 | 4.5 |
+| `custom` | — | the four coordinates below |
+
+> **Those figures are estimates, not specifications.** They are where the buttons
+> sit on a typical board of that family — the same standing `pin_x_offset = -1.0`
+> has. Measure yours, and use `custom` if they disagree.
+
+> #### Why the four coordinates hold real numbers rather than 0
+>
+> They used to sit at `0`, meaning "use the entry's figure". Picking
+> *ESP32-DevKitC* placed the buttons correctly — but the four boxes still read
+> **0**, so the panel gave no sign anything had happened.
+>
+> That cannot be fixed by tuning it. **OpenSCAD's Customizer cannot write one
+> parameter from another.** It reads each field's default out of the file and
+> lets you edit it; nothing in the panel computes. A named entry therefore
+> cannot fill the boxes in.
+>
+> So they default to the **DevKitC positions** instead. The panel always shows a
+> real place, and switching to `custom` starts you exactly where the shipped
+> board leaves off rather than at the corner of the case. The console prints what
+> your chosen entry works out to, computed for the case you actually got, so
+> copying an entry into `custom` is a paste:
+>
+> ```
+> Buttons: button_a_x / _a_y / _b_x / _b_y are not used at button_board =
+> devkitc, which places them from the board's own corner. To take over from it,
+> set button_board = custom and button_a_x = 8.1, button_a_y = 7.53,
+> button_b_x = 8.1, button_b_y = 24.53 — the same place, in this case's own
+> coordinates. The entry follows the board if you resize the case; those four
+> numbers would not.
+> ```
+>
+> Switch to `closure = "screw"` and the same line comes back reading **12.03 /
+> 29.03**, because the case got wider and the entry moved with the board.
+
+On this board the three entries work out to:
+
+| Board | `button_a_x` | `button_a_y` | `button_b_x` | `button_b_y` |
+| --- | --- | --- | --- | --- |
+| **ESP32-DevKitC 38-pin** | **8.1** | **7.53** | **8.1** | **24.53** |
+| DOIT DevKit v1 30-pin | 7.6 | 7.53 | 7.6 | 24.53 |
+| ESP32-S3-DevKitC | 9.6 | 8.03 | 9.6 | 24.03 |
+
+#### Placing them yourself
+
+The four coordinates measure **in from the case's outer faces** — the two you can
+put a rule against on the finished print:
+
+```
+   case from above: USB end to the LEFT, y = 0 along the BOTTOM edge
+
+   +--------------------------------------------------+
+   |                                                  |
+   |        (o) B  . . . . . . . . . . . . .  24.53   |
+ [USB]                                                |
+   |        (o) A  . . . . . . . . . . . . .   7.53   |
+   |         :                                        |
+   +---------+----------------------------------------+
+   :         :
+   :<- 8.1 ->:      devkitc, on the board this file ships with:
+   :                    button_a_x = 8.1   button_a_y =  7.53
+   x = 0                button_b_x = 8.1   button_b_y = 24.53
+```
+
+**x** is measured in from the USB end's outer face; **y** in from the near long
+side's outer face — the bottom edge above.
+
+At `button_board = "custom"` they are the case's own coordinates, so **what you
+type is where it is** — no magic value and nothing hidden. Set one and only that
+button's one axis moves:
+
+```
+button_a_y = 5
+
+A 8.1 / 5 in from the case faces = 6.5 / 1.47 in from the board's USB corner
+WARNING: button A at x 8.1 y 5 runs its flange 1.5 mm into the lid's rib ...
+```
+
+> #### The USB end is stable; the width is not
+>
+> The board sits hard against the inside of the USB wall, so **x is fixed against
+> your board** and only `wall` moves it. Grow the antenna bay, change
+> `pin_count`, override the length — a button at x 8.1 stays over the same spot
+> on the PCB:
+>
+> ```
+> antenna_gap 5    A 8.1 / 7.53 in from the case faces = 6.5 / 4 in from the board's USB corner
+> antenna_gap 15   A 8.1 / 7.53 in from the case faces = 6.5 / 4 in from the board's USB corner
+> ```
+>
+> **Across the width it is not.** The board is centred, so anything that widens
+> the case — `side_margin`, `board_w`, `width_override`, or `closure = "screw"`,
+> which adds a whole `boss_d` each side — moves the board's edges away from
+> `y = 0` and slides a y you set relative to the board. The board entries are
+> immune, because they are re-derived from where the board actually is rather
+> than stored as a spot in the case:
+>
+> ```
+> friction   A 8.1 /  7.53 in from the case faces = 6.5 / 4 in from the board's USB corner
+> screw      A 8.1 / 12.03 in from the case faces = 6.5 / 4 in from the board's USB corner
+> ```
+>
+> That is why the console prints each button **both ways**, and derives both from
+> the finished position rather than from the settings. The drift lands on the
+> line instead of in the print.
+
+#### Why it is a separate part
+
+The first version of this was a **printed flexure**: the cap cut free on three
+spring arms so the whole lid stayed one part. On paper it was sound — the arms
+ran 108° around the cap so the bending strain came out near 2 %, inside what PLA
+takes.
+
+**It broke after a few presses.** That is the useful result, and it is worth
+stating rather than quietly replacing: an arm that survives one press at 2 %
+strain is not an arm that survives a thousand, and *fatigue* is not something the
+strain figure predicts. A printed part is layers with bonds between them, and a
+bond that is loaded in bending a few hundred times fails long before the material
+does. No amount of tuning an arm's thickness fixes a design whose job is to bend
+in PLA for years.
+
+So the flexing is gone entirely. Nothing on the button bends, and nothing on the
+lid does either:
+
+```
+            │ │         stem   the hole less button_fit, standing button_proud
+            │ │                proud — its top face is what you press
+   ═════════╡ ╞══════   lid    hole = button_d − 2.0
+       _____│ │_____
+      |_____________|   flange button_d across, 0.6 thick, SOLID — and its
+                             FLAT underside is what presses the switch
+        ___#####___     switch
+   ══════════════════   PCB
+```
+
+> **Only one end is wider than the hole, and it is the flange.** That is not a
+> detail, it is what makes the part assemblable: fed in from inside the lid, the
+> whole stem — the pressed top included — passes through the bore, and the flange
+> stays behind and cannot follow.
+>
+> The first cut of this had a wide head on top as well. **It could not be
+> assembled at all** — a disc bigger than the hole at each end of a captive stem,
+> with no way in short of moulding the lid around it. If you change these
+> dimensions, that is the rule to keep.
+
+**What holds the button up is the switch's own dome.** It is stiffer than a
+fraction of a gram of plastic by a factor of thousands, so it pushes the button
+until the flange meets the lid's underside, and that is the rest position. Press
+and the button slides down its hole; let go and the dome returns it. The flange
+carries no load in service at all — it is the stop the dome pushes it against.
+
+It is **captive upward, not downward**: with the lid off, turn it over and the
+button drops out into your hand, so fit the lid to the tray with the buttons
+already in it. Closed, it cannot go anywhere. There is deliberately no slack
+setting between flange and plate — slack would come straight out of the same
+vertical budget the flange needs, and a tenth either way from print tolerance is
+free play nobody can feel.
+
+Three numbers are **derived rather than offered**:
+
+| Derived | Value | Why there is no second right answer |
+| --- | --- | --- |
+| lip | 1.0 | The shoulder the flange catches on. Under two perimeters it shears off; over it is only a narrower button behind the same flange |
+| flange thickness | 0.6 | Three 0.2 mm layers. A solid disc with nothing to flex has no reason to be thicker, and every extra tenth is a tenth of case height |
+| flange thickness | 0.6 | Three 0.2 mm layers. A solid disc with nothing to flex has no reason to be thicker, and every extra tenth is a tenth of case height |
+
+#### Assembly
+
+**The buttons go in from inside the lid, stem first.** Hold the lid upside down,
+push each button's 2.7 mm stem up through its 3.0 mm hole until the 5.0 mm flange
+is flat against the underside, then fit the lid to the tray. The flange is the
+only part wider than the hole — which is what lets it go in at all — and it
+cannot come back out the top.
+
+It *can* drop out downward from a bare lid, so fit the lid to the tray with the
+buttons already in it. That is the price of having no snap feature, and a snap
+feature is a thin flexing thing of exactly the kind that just failed.
+
+`part = "button"` prints both, laid out side by side. They are in the `all`
+layout too.
+
+#### Printing them
+
+**Flange down on the bed**, and it is the easiest part in the model to print
+because of it. The flange's underside is flat and it is the widest thing on the
+button, so the first layer is the full 5.0 mm disc — a solid, stable footprint —
+and the only step above it goes *inward*, to the stem.
+
+**Measured downward-facing area: 0.00 mm².** Not small, none: there is no
+overhang anywhere on the part, at any setting, and nothing to bridge.
+
+That is what the tip cost. With one under the flange the part had to print stem
+down, which put a 1.15 mm unsupported annular ledge at the flange — **21.1 mm²
+per button** — and it is why the first version would not print.
+
+`button_fit` is the number that decides whether this works on your printer. It
+comes off the **stem**, never out of the hole, so the lid's opening stays the
+number the panel says and every tolerance lives on the loose part — the one you
+can reprint on its own when it binds. 0.3 total, 0.15 a side, slides freely on a
+well-tuned 0.4 mm nozzle. It is a clearance, never an interference: a button
+pressed into its hole is a button that has stopped moving.
+
+#### Room
+
+**On a devkit-width case the rib is what runs out of room first**, and it is the
+flange that binds — the hole through the plate is 2.0 mm smaller, but the flange
+swings below the lid at the full `button_d`, in exactly the band where the rib
+hangs. Two 7 mm flanges on a 25 mm board, 4 mm in from each edge, leave
+**2.03 mm** of plate. That is reported on the console rather than warned about,
+because it is a real number you can spend: `button_d` spends it, `side_margin`
+buys more.
+
+The model also warns when a button lands off the board, when the two overlap,
+when one runs into the vent patch or under the label, when `button_fit` is tight
+enough to seize, when `button_proud` is too short to still be proud at the bottom
+of the stroke, and when `cavity_h` is pinned so low that the closed case would
+hold the buttons down.
+
+> **Only the flexure has been printed and tested — and it failed.** The part that
+> replaced it has not. Whether 0.3 mm of `button_fit` slides on your printer and
+> whether 0.3 mm of `button_gap` feels right are the two things only a print will
+> tell you, and both are cheap to iterate: the button is a 4 mm disc that prints
+> in under a minute, without reprinting the lid.
+
+**The fit template deliberately shows nothing for the buttons.** It looks like
+the place for it, but the template works by having you drop the board *into* it,
+which puts the board on top of the floor — a mark at a button's position would end
+up underneath it. What checks the positions is the console line and the
+`assembled` preview.
 
 ## Every parameter
 
@@ -1198,6 +1498,21 @@ them cannot be built, the model stops with a message naming the fix.
 | `opening_z` | 0 – 30 | Height of the far end opening above the floor's top face. (mm) |
 | `usb_fit` | 0 – 3 | Slack in the USB opening, total across the socket's shell. (mm) |
 
+### Buttons
+
+| Parameter | Range | What it does |
+| --- | --- | --- |
+| `button_board` | 5 choices | Which devkit's buttons to place. Custom hands it to the four coordinates below. |
+| `button_a_x` | 0 – 250 | Button A from the USB end's outer face. Used at button_board = custom. (mm) |
+| `button_a_y` | 0 – 250 | Button A from the near side's outer face. Used at button_board = custom. (mm) |
+| `button_b_x` | 0 – 250 | Button B from the USB end's outer face. Used at button_board = custom. (mm) |
+| `button_b_y` | 0 – 250 | Button B from the near side's outer face. Used at button_board = custom. (mm) |
+| `button_h` | 0.3 – 10 | How far the switch's actuator stands above the board's top face. (mm) |
+| `button_gap` | 0.1 – 2 | Air under the button's flange at rest. Too little and the case holds the button on. (mm) |
+| `button_d` | 3 – 20 | The button's width: the flange, the flat bottom, and what presses the switch. (mm) |
+| `button_proud` | 0.2 – 6 | How far the stem stands proud of the lid's top face at rest. (mm) |
+| `button_fit` | 0.05 – 1 | Clearance between the stem and the lid's hole. Raise if it binds, lower if it rattles. (mm) |
+
 ### Lid
 
 | Parameter | Range | What it does |
@@ -1270,6 +1585,25 @@ lettering, 0.6 mm above the bed — about 32 mm² for `"ESP"` — bridged over a
 glyph's width in the first two layers. The vent openings are cut clean through
 and never overhang, whatever artwork you use.
 
+**The buttons add nothing to the lid**, which is why the table above has no row
+for them: the lid measures 0.85 / 1.38 / 1.99 mm² with them on and the identical
+0.85 / 1.38 / 1.99 with `button_board = "none"`. All the lid gets is two plain
+bores, vertical at every depth. With the buttons off it is **byte-identical** to
+the lid before they existed, and the template is byte-identical either way; only
+the tray changes, and only in height.
+
+**The buttons themselves are the one part here that has an overhang**, and it is
+deliberate:
+
+| Part | Surface below 45° | below 55° | below 60° |
+| --- | --- | --- | --- |
+| Buttons (both) | 0.00 mm² | 0.00 mm² | 0.00 mm² |
+
+Printed flange down, every step on the button goes inward from a flat 5.0 mm
+first layer, so there is nothing to droop and nothing to bridge. Nothing bears on it — the face that bears is the
+flange's *underside*, against the lid, and that one prints against the ledge
+below it. See [Buttons](#buttons) for why a self-supporting cone was traded away.
+
 Three features exist specifically to keep this true:
 
 - **The troughs are square, and anything they do roof bridges.** On the current
@@ -1321,9 +1655,10 @@ You may share, adapt, remix and sell this design, including commercially,
 provided you credit markus1234, link to the license, and say what you changed.
 
 This covers **the model** — [`esp-enclosure.scad`](esp-enclosure.scad),
-[`wifi.svg`](wifi.svg) and this documentation — which is an original design,
-written from scratch. It does **not** cover `esphome.svg`, which came from
-somewhere else and keeps its own license. See below.
+[`slots.svg`](slots.svg), [`wifi.svg`](wifi.svg) and this documentation — which
+is an original design, written from scratch. It does **not** cover
+`esphome.svg`, which came from somewhere else and keeps its own license. See
+below.
 
 ## Third-party assets
 
@@ -1354,8 +1689,17 @@ depicts. ESPHome and its logo belong to their owners. This project is not
 affiliated with, sponsored by or endorsed by ESPHome or the Open Home
 Foundation, and including the logo is not a claim otherwise.
 
-Nothing renders the logo unless you ask for it: `vent_style` defaults to
-`slots`, and `vent_file` to `wifi.svg`. If you would rather the file were not
-in your copy at all, delete `esphome.svg` — the model does not reference it.
+**The logo is what the lid renders by default.** `vent_file` is set to
+`esphome.svg`, so a stock `part = "lid"` cuts the ESPHome mark through the plate
+— which means the attribution above travels with anything you publish, print for
+someone else or sell. That is a licence obligation, not a formality: Apache 2.0
+section 4 wants the notice kept, and section 6 grants nothing in the mark itself.
+
+If you would rather not carry it, `vent_file = "slots.svg"` or `"wifi.svg"` swaps
+in artwork that is part of this model and under its own CC BY 4.0, and
+`vents = false` cuts none at all. Either of those frees you to delete
+`esphome.svg` from your copy; note that the lid then prints without vents and
+with `import()` reporting `ERROR: Can't open file` if `vent_file` still names the
+missing one.
 
 > Not legal advice. If you redistribute this, check the terms yourself.
